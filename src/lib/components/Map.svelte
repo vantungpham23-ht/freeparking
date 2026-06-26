@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { browser } from '$app/environment';
   import type { Parking } from '$lib/types';
+  import { setLocationState } from '$lib/stores/location';
 
   interface Props {
     parkings: Parking[];
@@ -21,6 +22,7 @@
   let userMarkerLayer: any = $state(null);
   let watchId: number | null = $state(null);
   let mapReady = $state(false);
+  let mapLoading = $state(true);
 
   // Cache for marker icons
   const iconCache: Map<string, any> = new Map();
@@ -267,29 +269,41 @@
   }
 
   function initGeolocation() {
-    if (!browser || !navigator.geolocation) return;
+    if (!browser || !navigator.geolocation) {
+      setLocationState('unavailable');
+      return;
+    }
 
-    const locationOptions = { 
-      enableHighAccuracy: true, 
+    setLocationState('requesting');
+
+    const locationOptions = {
+      enableHighAccuracy: true,
       timeout: 10000,
-      maximumAge: 30000 
+      maximumAge: 30000
     };
 
     // Initial position
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const loc = { 
-          lat: position.coords.latitude, 
-          lng: position.coords.longitude 
+        const loc = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
         };
         onUserLocationChange(loc);
-        
+        setLocationState('granted', loc);
+
         if (map) {
           map.setView([loc.lat, loc.lng], 15);
         }
       },
       (error) => {
-        console.log('Geolocation error:', error.message);
+        if (error.code === error.PERMISSION_DENIED) {
+          setLocationState('denied', null, 'Bạn đã từ chối cấp quyền vị trí');
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
+          setLocationState('unavailable', null, 'Không thể xác định vị trí');
+        } else {
+          setLocationState('denied', null, error.message);
+        }
       },
       locationOptions
     );
@@ -297,26 +311,31 @@
     // Watch position
     watchId = navigator.geolocation.watchPosition(
       (position) => {
-        const loc = { 
-          lat: position.coords.latitude, 
-          lng: position.coords.longitude 
+        const loc = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
         };
         onUserLocationChange(loc);
+        setLocationState('granted', loc);
       },
-      () => {},
+      (error) => {
+        if (error.code === error.PERMISSION_DENIED) {
+          setLocationState('denied');
+        }
+      },
       { enableHighAccuracy: true, maximumAge: 10000 }
     );
   }
 
   onMount(async () => {
     if (!browser) return;
-    
+
     try {
       L = await import('leaflet');
-      
+
       // Expose navigation function
       (window as any).__openNav = openNavigation;
-      
+
       map = L.map(mapContainer!, {
         center: [48.72, 21.25],
         zoom: 15,
@@ -339,12 +358,14 @@
       map.on('zoomend', handleMapMove);
 
       mapReady = true;
-      
+      mapLoading = false;
+
       initGeolocation();
-      
+
       setTimeout(() => updateMarkers(), 100);
     } catch (error) {
       console.error('Failed to initialize map:', error);
+      mapLoading = false;
     }
   });
 
@@ -400,7 +421,13 @@
   }
 </script>
 
-<div class="map-container" bind:this={mapContainer}></div>
+<div class="map-container" bind:this={mapContainer}>
+  {#if mapLoading}
+    <div class="map-loading" role="status" aria-label="Đang tải bản đồ">
+      <div class="map-loading-spinner"></div>
+    </div>
+  {/if}
+</div>
 
 <style>
   :global(.custom-marker) {
@@ -431,5 +458,24 @@
     right: 0;
     bottom: 0;
     z-index: 1;
+  }
+
+  .map-loading {
+    position: absolute;
+    inset: 0;
+    background: var(--bg-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+  }
+
+  .map-loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
   }
 </style>

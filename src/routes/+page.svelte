@@ -3,17 +3,19 @@
   import Map from '$lib/components/Map.svelte';
   import ParkingPanel from '$lib/components/ParkingPanel.svelte';
   import Header from '$lib/components/Header.svelte';
-  import { CheckIcon, LocationIcon, ParkingIcon } from '$lib/icons';
-  import type { Parking } from '$lib/types';
-  import { cities, detectCity, getParkingForCity, vinhCenter, kosiceCenter } from '$lib/data';
+  import WelcomeModal from '$lib/components/WelcomeModal.svelte';
+  import CityLegend from '$lib/components/CityLegend.svelte';
+  import LocationButton from '$lib/components/LocationButton.svelte';
+import type { Parking } from '$lib/types';
+import { cities, getParkingCounts, getParkingForCity } from '$lib/data';
+import { preferences } from '$lib/stores/preferences';
 
   let parkings = $state<Parking[]>([]);
   let selectedParkingId = $state<string | null>(null);
   let selectedParking = $derived(parkings.find(p => p.id === selectedParkingId) || null);
   let userLocation = $state<{ lat: number; lng: number } | null>(null);
   let showPanel = $state(false);
-  let isLoading = $state(true);
-  let isInitialLoad = $state(true);
+  let isLoading = $state(false);
   let parkingCount = $state(0);
   let mapComponent: Map | undefined = $state(undefined);
   let currentBounds = $state({ south: 48.70, west: 21.23, north: 48.75, east: 21.28 });
@@ -24,6 +26,9 @@
   let fetchError = $state<string | null>(null);
   let retryCount = $state(0);
   let currentCityId = $state<string>('kosice');
+  let showWelcome = $state(false);
+
+  const cityCounts = getParkingCounts();
 
   const OVERPASS_ENDPOINTS = [
     'https://overpass-api.de/api/interpreter',
@@ -159,6 +164,7 @@
 
   function switchCity(cityId: string) {
     currentCityId = cityId;
+    preferences.update((p) => ({ ...p, lastCity: cityId }));
     const city = cities.find(c => c.id === cityId);
     if (city) {
       currentBounds = {
@@ -167,14 +173,18 @@
         north: city.center.lat + 0.05,
         east: city.center.lng + 0.05,
       };
-      
+
       if (mapComponent) {
         mapComponent.flyTo(city.center.lat, city.center.lng, 14);
       }
-      
+
       parkings = loadLocalParkings(cityId);
       parkingCount = parkings.length;
     }
+  }
+
+  function handleLegendFilter(filter: 'free' | 'paid' | 'weekend') {
+    showPanel = true;
   }
 
   async function fetchParkings(bounds: typeof currentBounds, immediate = false) {
@@ -256,15 +266,25 @@ out center;`;
     }
     
     isLoading = false;
-    isInitialLoad = false;
   }
 
   onMount(async () => {
-    // Load local parking data for Košice (default city)
+    // Load last city from preferences
+    const prefs = $preferences;
+    if (prefs.lastCity && (prefs.lastCity === 'kosice' || prefs.lastCity === 'vinh')) {
+      currentCityId = prefs.lastCity;
+    }
+
+    // Load local parking data for current city
     parkings = loadLocalParkings(currentCityId);
     parkingCount = parkings.length;
-    isLoading = false;
-    isInitialLoad = false;
+
+    // Show welcome modal if not seen
+    if (!prefs.hasSeenOnboarding) {
+      setTimeout(() => {
+        showWelcome = true;
+      }, 600);
+    }
   });
 
   let fetchTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -343,25 +363,16 @@ out center;`;
 </svelte:head>
 
 <div class="app-container">
-  {#if isInitialLoad && isLoading}
-    <div class="loading-overlay" role="status" aria-label="Đang tải">
-      <div class="loading-icon">
-        {@html ParkingIcon}
-      </div>
-      <p class="loading-text">Đang tải bãi đỗ xe...</p>
-      <p class="loading-subtext">Kết nối với OpenStreetMap</p>
-    </div>
-  {/if}
-
   <!-- Header -->
-  <Header 
+  <Header
     onToggleList={handleToggleList}
-    onMyLocation={handleMyLocation}
     onSearch={handleSearch}
     onRadiusChange={handleRadiusChange}
     onCityChange={switchCity}
+    onShowHelp={() => showWelcome = true}
     isListOpen={showPanel}
     currentCity={currentCityId}
+    {cityCounts}
   />
 
   <!-- Map -->
@@ -375,6 +386,12 @@ out center;`;
       onMapMove={handleMapMove}
       onUserLocationChange={handleUserLocationChange}
     />
+
+    <!-- City Legend -->
+    <CityLegend onFilterClick={handleLegendFilter} />
+
+    <!-- Location Button (FAB) -->
+    <LocationButton onClick={handleMyLocation} />
 
     <!-- Error Toast -->
     {#if fetchError}
@@ -391,14 +408,6 @@ out center;`;
         </button>
       </div>
     {/if}
-
-    <!-- Loading indicator -->
-    {#if isLoading && !isInitialLoad}
-      <div class="mini-loading">
-        <div class="mini-spinner"></div>
-        <span>Cập nhật...</span>
-      </div>
-    {/if}
   </div>
 
   <!-- Parking List Panel -->
@@ -407,6 +416,7 @@ out center;`;
     {selectedParking}
     {userLocation}
     isOpen={showPanel}
+    isLoading={isLoading}
     onSelectParking={handleSelectParking}
     onClose={() => showPanel = false}
   />
@@ -419,24 +429,14 @@ out center;`;
     </div>
   {/if}
 
-  <!-- FAB Button - My Location -->
-  <button 
-    class="fab" 
-    onclick={handleMyLocation} 
-    aria-label="Vị trí của tôi"
-    title="Vị trí của tôi"
-  >
-    {@html LocationIcon}
-  </button>
+  <!-- Welcome Modal -->
+  <WelcomeModal
+    isOpen={showWelcome}
+    onClose={() => showWelcome = false}
+  />
 </div>
 
 <style>
-  .loading-subtext {
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-top: 4px;
-  }
-
   .error-toast {
     position: absolute;
     bottom: 100px;
@@ -487,38 +487,12 @@ out center;`;
     opacity: 1;
   }
 
-  .mini-loading {
-    position: absolute;
-    top: calc(var(--header-height) + 12px);
-    right: 16px;
-    background: var(--bg);
-    padding: 8px 14px;
-    border-radius: var(--radius-full);
-    box-shadow: var(--shadow-md);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    z-index: 200;
-    font-size: 12px;
-    color: var(--text-secondary);
-    font-weight: 500;
-  }
-
-  .mini-spinner {
-    width: 14px;
-    height: 14px;
-    border: 2px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-
   @keyframes slideUp {
-    from { 
+    from {
       transform: translateX(-50%) translateY(20px);
       opacity: 0;
     }
-    to { 
+    to {
       transform: translateX(-50%) translateY(0);
       opacity: 1;
     }

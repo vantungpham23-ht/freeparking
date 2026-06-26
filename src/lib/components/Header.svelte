@@ -1,17 +1,27 @@
 <script lang="ts">
-  import { ParkingIcon, SearchIcon, MenuIcon, LocationIcon, CloseIcon } from '$lib/icons';
+  import { ParkingIcon, SearchIcon, MenuIcon, CloseIcon } from '$lib/icons';
 
   interface Props {
     onToggleList?: () => void;
-    onMyLocation?: () => void;
     onSearch?: (query: string, radiusKm: number) => void;
     onRadiusChange?: (radiusKm: number) => void;
     onCityChange?: (cityId: string) => void;
+    onShowHelp?: () => void;
     isListOpen?: boolean;
     currentCity?: string;
+    cityCounts?: Record<string, number>;
   }
 
-  let { onToggleList, onMyLocation, onSearch, onRadiusChange, onCityChange, isListOpen = false, currentCity = 'kosice' }: Props = $props();
+  let {
+    onToggleList,
+    onSearch,
+    onRadiusChange,
+    onCityChange,
+    onShowHelp,
+    isListOpen = false,
+    currentCity = 'kosice',
+    cityCounts = {}
+  }: Props = $props();
 
   let searchQuery = $state('');
   let radiusKm = $state(2);
@@ -133,21 +143,27 @@
   </a>
 
   <div class="city-selector">
-    <button 
-      class="city-btn" 
+    <button
+      class="city-btn"
       class:active={currentCity === 'kosice'}
       onclick={() => onCityChange?.('kosice')}
       type="button"
     >
       Košice
+      {#if cityCounts.kosice !== undefined}
+        <span class="city-count">{cityCounts.kosice}</span>
+      {/if}
     </button>
-    <button 
-      class="city-btn" 
+    <button
+      class="city-btn"
       class:active={currentCity === 'vinh'}
       onclick={() => onCityChange?.('vinh')}
       type="button"
     >
       Vinh
+      {#if cityCounts.vinh !== undefined}
+        <span class="city-count">{cityCounts.vinh}</span>
+      {/if}
     </button>
   </div>
 
@@ -254,23 +270,31 @@
   </div>
 
   <div class="header-actions">
-    <button 
-      class="icon-btn" 
+    {#if onShowHelp}
+      <button
+        class="icon-btn"
+        onclick={onShowHelp}
+        aria-label="Xem hướng dẫn"
+        title="Hướng dẫn"
+        type="button"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </button>
+    {/if}
+
+    <button
+      class="icon-btn"
       class:active={isListOpen}
       onclick={onToggleList}
       aria-label={isListOpen ? 'Đóng danh sách' : 'Mở danh sách bãi đỗ'}
       title={isListOpen ? 'Đóng danh sách' : 'Mở danh sách'}
+      type="button"
     >
       {@html MenuIcon}
-    </button>
-    
-    <button 
-      class="icon-btn"
-      onclick={onMyLocation}
-      aria-label="Vị trí của tôi"
-      title="Vị trí của tôi"
-    >
-      {@html LocationIcon}
     </button>
   </div>
 </header>
@@ -295,6 +319,9 @@
     background: transparent;
     color: var(--text-secondary);
     transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .city-btn:hover {
@@ -304,6 +331,22 @@
   .city-btn.active {
     background: var(--accent);
     color: white;
+  }
+
+  .city-count {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.25);
+    color: inherit;
+    min-width: 18px;
+    text-align: center;
+  }
+
+  .city-btn:not(.active) .city-count {
+    background: var(--bg);
+    color: var(--text-muted);
   }
 
   .search-container {

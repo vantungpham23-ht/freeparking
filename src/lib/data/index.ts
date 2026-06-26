@@ -46,5 +46,12 @@ export function getParkingForCity(cityId: string): Parking[] {
   return city?.parkings ?? [];
 }
 
+export function getParkingCounts(): Record<string, number> {
+  return cities.reduce((acc, city) => {
+    acc[city.id] = city.parkings.length;
+    return acc;
+  }, {} as Record<string, number>);
+}
+
 export { vinhParkings, vinhCenter };
 export { kosiceParkings, kosiceCenter };

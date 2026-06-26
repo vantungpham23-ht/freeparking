@@ -2,17 +2,19 @@
   import { browser } from '$app/environment';
   import type { Parking } from '$lib/types';
   import { ParkingIcon, NavigateIcon, CarIcon, SortIcon, FilterIcon } from '$lib/icons';
+  import SkeletonCard from './SkeletonCard.svelte';
 
   interface Props {
     parkings: Parking[];
     selectedParking: Parking | null;
     userLocation: { lat: number; lng: number } | null;
     isOpen: boolean;
+    isLoading?: boolean;
     onSelectParking: (p: Parking) => void;
     onClose: () => void;
   }
 
-  let { parkings, selectedParking, userLocation, isOpen, onSelectParking, onClose }: Props = $props();
+  let { parkings, selectedParking, userLocation, isOpen, isLoading = false, onSelectParking, onClose }: Props = $props();
 
   type SortOption = 'distance' | 'name' | 'capacity';
   type FilterOption = 'all' | 'free' | 'paid' | 'weekend';
@@ -40,6 +42,12 @@
     if (meters < 100) return '< 100m';
     if (meters < 1000) return `${Math.round(meters)}m`;
     return `${(meters / 1000).toFixed(1)}km`;
+  }
+
+  function estimateWalkingMinutes(meters: number): string {
+    const minutes = Math.ceil(meters / 80);
+    if (minutes < 1) return '< 1 phút';
+    return `${minutes} phút đi bộ`;
   }
 
   function openNavigation(parking: Parking, e: Event) {
@@ -249,7 +257,9 @@
   </div>
 
   <div class="panel-content" role="listbox" aria-label="Danh sách bãi đỗ">
-    {#if parkings.length === 0}
+    {#if isLoading}
+      <SkeletonCard count={4} />
+    {:else if parkings.length === 0}
       <div class="empty-state">
         <div class="empty-icon">
           {@html CarIcon}
@@ -321,8 +331,11 @@
           </div>
 
           {#if distance !== null}
-            <div class="parking-distance" title="Khoảng cách">
-              {formatDistance(distance)}
+            <div class="parking-distance" title={estimateWalkingMinutes(distance)}>
+              <div class="distance-value">{formatDistance(distance)}</div>
+              {#if distance < 2000}
+                <div class="distance-time">{estimateWalkingMinutes(distance)}</div>
+              {/if}
             </div>
           {/if}
 

@@ -1,5 +1,6 @@
-import { a5 as ssr_context, a6 as bind_props, a7 as attr_class, a8 as attr, e as escape_html, a9 as ensure_array_like, aa as stringify, a3 as derived, a4 as head } from "../../chunks/index.js";
+import { a5 as ssr_context, a6 as bind_props, a7 as ensure_array_like, a8 as attr_style, a3 as derived, a9 as stringify, aa as attr_class, ab as attr, e as escape_html, ac as store_get, ad as unsubscribe_stores, a4 as head } from "../../chunks/index.js";
 import "clsx";
+import { w as writable } from "../../chunks/index2.js";
 function html(value) {
   var html2 = String(value ?? "");
   var open = "<!---->";
@@ -9,6 +10,11 @@ function onDestroy(fn) {
   /** @type {SSRContext} */
   ssr_context.r.on_destroy(fn);
 }
+const locationStore = writable({
+  state: "unknown",
+  coords: null,
+  errorMessage: null
+});
 function Map_1($$renderer, $$props) {
   $$renderer.component(($$renderer2) => {
     let {
@@ -28,7 +34,12 @@ function Map_1($$renderer, $$props) {
     }
     function refreshMarkers() {
     }
-    $$renderer2.push(`<div class="map-container svelte-13da2aa"></div>`);
+    $$renderer2.push(`<div class="map-container svelte-13da2aa">`);
+    {
+      $$renderer2.push("<!--[0-->");
+      $$renderer2.push(`<div class="map-loading svelte-13da2aa" role="status" aria-label="Đang tải bản đồ"><div class="map-loading-spinner svelte-13da2aa"></div></div>`);
+    }
+    $$renderer2.push(`<!--]--></div>`);
     bind_props($$props, { flyTo, centerOnUser, refreshMarkers });
   });
 }
@@ -72,13 +83,25 @@ const CarIcon = icons.car;
 const SortIcon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
   <path d="M3 6h18M6 12h12M9 18h6"/>
 </svg>`;
+function SkeletonCard($$renderer, $$props) {
+  let { count = 4 } = $$props;
+  const items = derived(() => Array.from({ length: count }));
+  $$renderer.push(`<div class="skeleton-list svelte-lx25l7" role="status" aria-label="Đang tải danh sách"><!--[-->`);
+  const each_array = ensure_array_like(items());
+  for (let i = 0, $$length = each_array.length; i < $$length; i++) {
+    each_array[i];
+    $$renderer.push(`<div class="skeleton-card svelte-lx25l7"${attr_style(`animation-delay: ${stringify(i * 80)}ms`)}><div class="skeleton-status shimmer svelte-lx25l7"></div> <div class="skeleton-info svelte-lx25l7"><div class="skeleton-name shimmer svelte-lx25l7"></div> <div class="skeleton-meta shimmer svelte-lx25l7"></div></div> <div class="skeleton-distance shimmer svelte-lx25l7"></div> <div class="skeleton-nav shimmer svelte-lx25l7"></div></div>`);
+  }
+  $$renderer.push(`<!--]--></div>`);
+}
 function ParkingPanel($$renderer, $$props) {
   $$renderer.component(($$renderer2) => {
     let {
       parkings,
       selectedParking,
       userLocation,
-      isOpen
+      isOpen,
+      isLoading = false
     } = $$props;
     let sortBy = "distance";
     let filterBy = "all";
@@ -98,6 +121,11 @@ function ParkingPanel($$renderer, $$props) {
       if (meters < 100) return "< 100m";
       if (meters < 1e3) return `${Math.round(meters)}m`;
       return `${(meters / 1e3).toFixed(1)}km`;
+    }
+    function estimateWalkingMinutes(meters) {
+      const minutes = Math.ceil(meters / 80);
+      if (minutes < 1) return "< 1 phút";
+      return `${minutes} phút đi bộ`;
     }
     function getSortedAndFilteredParkings() {
       let result = [...parkings];
@@ -141,11 +169,14 @@ function ParkingPanel($$renderer, $$props) {
       $$renderer2.push("<!--[-1-->");
     }
     $$renderer2.push(`<!--]--></div></div></div> <div class="panel-content" role="listbox" aria-label="Danh sách bãi đỗ">`);
-    if (parkings.length === 0) {
+    if (isLoading) {
       $$renderer2.push("<!--[0-->");
+      SkeletonCard($$renderer2, { count: 4 });
+    } else if (parkings.length === 0) {
+      $$renderer2.push("<!--[1-->");
       $$renderer2.push(`<div class="empty-state"><div class="empty-icon">${html(CarIcon)}</div> <p class="empty-title">Không có bãi đỗ</p> <p class="empty-text">Di chuyển bản đồ để tìm bãi đỗ xe</p></div>`);
     } else if (filteredParkings().length === 0) {
-      $$renderer2.push("<!--[1-->");
+      $$renderer2.push("<!--[2-->");
       $$renderer2.push(`<div class="empty-state"><div class="empty-icon">${html(FilterIcon)}</div> <p class="empty-title">Không tìm thấy</p> <p class="empty-text">Thử thay đổi bộ lọc</p> <button class="reset-filter-btn svelte-122re7a">Xóa bộ lọc</button></div>`);
     } else {
       $$renderer2.push("<!--[-1-->");
@@ -191,7 +222,14 @@ function ParkingPanel($$renderer, $$props) {
         $$renderer2.push(`<!--]--></div></div> `);
         if (distance !== null) {
           $$renderer2.push("<!--[0-->");
-          $$renderer2.push(`<div class="parking-distance" title="Khoảng cách">${escape_html(formatDistance(distance))}</div>`);
+          $$renderer2.push(`<div class="parking-distance"${attr("title", estimateWalkingMinutes(distance))}><div class="distance-value">${escape_html(formatDistance(distance))}</div> `);
+          if (distance < 2e3) {
+            $$renderer2.push("<!--[0-->");
+            $$renderer2.push(`<div class="distance-time">${escape_html(estimateWalkingMinutes(distance))}</div>`);
+          } else {
+            $$renderer2.push("<!--[-1-->");
+          }
+          $$renderer2.push(`<!--]--></div>`);
         } else {
           $$renderer2.push("<!--[-1-->");
         }
@@ -205,8 +243,10 @@ function ParkingPanel($$renderer, $$props) {
 function Header($$renderer, $$props) {
   $$renderer.component(($$renderer2) => {
     let {
+      onShowHelp,
       isListOpen = false,
-      currentCity = "kosice"
+      currentCity = "kosice",
+      cityCounts = {}
     } = $$props;
     let searchQuery = "";
     let radiusKm = 2;
@@ -223,7 +263,21 @@ function Header($$renderer, $$props) {
       const value = parseFloat(e.target.value);
       radiusKm = value;
     }
-    $$renderer2.push(`<header class="header"><a href="/" class="header-logo" aria-label="T-Map - Trang chủ">${html(ParkingIcon)} <span>T-map</span></a> <div class="city-selector svelte-1elxaub"><button${attr_class("city-btn svelte-1elxaub", void 0, { "active": currentCity === "kosice" })} type="button">Košice</button> <button${attr_class("city-btn svelte-1elxaub", void 0, { "active": currentCity === "vinh" })} type="button">Vinh</button></div> <div class="search-container svelte-1elxaub"><div${attr_class("search-box svelte-1elxaub", void 0, { "searching": isSearching })}><span class="search-icon svelte-1elxaub">${html(SearchIcon)}</span> <div class="input-wrapper svelte-1elxaub"><input type="text" class="search-input svelte-1elxaub" placeholder="Tìm kiếm địa điểm (VD: Aupark)..." aria-label="Tìm kiếm địa điểm"${attr("value", searchQuery)} role="combobox"${attr("aria-expanded", showSuggestions)} aria-autocomplete="list" aria-controls="search-suggestions" autocomplete="off"/> `);
+    $$renderer2.push(`<header class="header"><a href="/" class="header-logo" aria-label="T-Map - Trang chủ">${html(ParkingIcon)} <span>T-map</span></a> <div class="city-selector svelte-1elxaub"><button${attr_class("city-btn svelte-1elxaub", void 0, { "active": currentCity === "kosice" })} type="button">Košice `);
+    if (cityCounts.kosice !== void 0) {
+      $$renderer2.push("<!--[0-->");
+      $$renderer2.push(`<span class="city-count svelte-1elxaub">${escape_html(cityCounts.kosice)}</span>`);
+    } else {
+      $$renderer2.push("<!--[-1-->");
+    }
+    $$renderer2.push(`<!--]--></button> <button${attr_class("city-btn svelte-1elxaub", void 0, { "active": currentCity === "vinh" })} type="button">Vinh `);
+    if (cityCounts.vinh !== void 0) {
+      $$renderer2.push("<!--[0-->");
+      $$renderer2.push(`<span class="city-count svelte-1elxaub">${escape_html(cityCounts.vinh)}</span>`);
+    } else {
+      $$renderer2.push("<!--[-1-->");
+    }
+    $$renderer2.push(`<!--]--></button></div> <div class="search-container svelte-1elxaub"><div${attr_class("search-box svelte-1elxaub", void 0, { "searching": isSearching })}><span class="search-icon svelte-1elxaub">${html(SearchIcon)}</span> <div class="input-wrapper svelte-1elxaub"><input type="text" class="search-input svelte-1elxaub" placeholder="Tìm kiếm địa điểm (VD: Aupark)..." aria-label="Tìm kiếm địa điểm"${attr("value", searchQuery)} role="combobox"${attr("aria-expanded", showSuggestions)} aria-autocomplete="list" aria-controls="search-suggestions" autocomplete="off"/> `);
     {
       $$renderer2.push("<!--[-1-->");
     }
@@ -257,8 +311,659 @@ function Header($$renderer, $$props) {
     {
       $$renderer2.push("<!--[-1-->");
     }
-    $$renderer2.push(`<!--]--></div> <div class="header-actions"><button${attr_class("icon-btn", void 0, { "active": isListOpen })}${attr("aria-label", isListOpen ? "Đóng danh sách" : "Mở danh sách bãi đỗ")}${attr("title", isListOpen ? "Đóng danh sách" : "Mở danh sách")}>${html(MenuIcon)}</button> <button class="icon-btn" aria-label="Vị trí của tôi" title="Vị trí của tôi">${html(LocationIcon)}</button></div></header>`);
+    $$renderer2.push(`<!--]--></div> <div class="header-actions">`);
+    if (onShowHelp) {
+      $$renderer2.push("<!--[0-->");
+      $$renderer2.push(`<button class="icon-btn" aria-label="Xem hướng dẫn" title="Hướng dẫn" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></button>`);
+    } else {
+      $$renderer2.push("<!--[-1-->");
+    }
+    $$renderer2.push(`<!--]--> <button${attr_class("icon-btn", void 0, { "active": isListOpen })}${attr("aria-label", isListOpen ? "Đóng danh sách" : "Mở danh sách bãi đỗ")}${attr("title", isListOpen ? "Đóng danh sách" : "Mở danh sách")} type="button">${html(MenuIcon)}</button></div></header>`);
   });
+}
+function WelcomeModal($$renderer, $$props) {
+  $$renderer.component(($$renderer2) => {
+    let { isOpen } = $$props;
+    let currentStep = 0;
+    const steps = [
+      {
+        icon: "pin",
+        iconColor: "#2563eb",
+        iconBg: "#dbeafe",
+        title: "Chào mừng đến với T-Map",
+        description: "Ứng dụng giúp bạn tìm kiếm và định vị bãi đỗ xe nhanh chóng tại Košice và Vinh."
+      },
+      {
+        icon: "city",
+        iconColor: "#10b981",
+        iconBg: "#d1fae5",
+        title: "Chọn thành phố của bạn",
+        description: "Chuyển đổi giữa Košice (Slovakia) và Vinh (Việt Nam) bằng nút ở góc trên bên trái."
+      },
+      {
+        icon: "filter",
+        iconColor: "#f59e0b",
+        iconBg: "#fef3c7",
+        title: "Lọc bãi đỗ theo nhu cầu",
+        description: "Lọc theo miễn phí, trả phí hoặc cuối tuần miễn phí. Sắp xếp theo khoảng cách hoặc sức chứa."
+      },
+      {
+        icon: "navigate",
+        iconColor: "#8b5cf6",
+        iconBg: "#ede9fe",
+        title: "Chỉ đường dễ dàng",
+        description: "Nhấn nút định vị để mở Google Maps/Apple Maps và dẫn đường đến bãi đỗ gần nhất."
+      }
+    ];
+    const step = derived(() => steps[currentStep]);
+    if (isOpen) {
+      $$renderer2.push("<!--[0-->");
+      $$renderer2.push(`<div class="modal-backdrop svelte-1tjvg83" role="presentation"><div class="modal-content svelte-1tjvg83" role="dialog" aria-modal="true" aria-labelledby="welcome-title"><button class="close-btn svelte-1tjvg83" aria-label="Đóng hướng dẫn" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button> <div class="modal-icon svelte-1tjvg83"${attr_style(`background: ${stringify(step().iconBg)}; color: ${stringify(step().iconColor)}`)}>`);
+      if (step().icon === "pin") {
+        $$renderer2.push("<!--[0-->");
+        $$renderer2.push(`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`);
+      } else if (step().icon === "city") {
+        $$renderer2.push("<!--[1-->");
+        $$renderer2.push(`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"></path><path d="M5 21V7l8-4v18"></path><path d="M19 21V11l-6-4"></path></svg>`);
+      } else if (step().icon === "filter") {
+        $$renderer2.push("<!--[2-->");
+        $$renderer2.push(`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>`);
+      } else if (step().icon === "navigate") {
+        $$renderer2.push("<!--[3-->");
+        $$renderer2.push(`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>`);
+      } else {
+        $$renderer2.push("<!--[-1-->");
+      }
+      $$renderer2.push(`<!--]--></div> <h2 class="modal-title svelte-1tjvg83" id="welcome-title">${escape_html(step().title)}</h2> <p class="modal-description svelte-1tjvg83">${escape_html(step().description)}</p> <div class="step-indicators svelte-1tjvg83" role="tablist"><!--[-->`);
+      const each_array = ensure_array_like(steps);
+      for (let i = 0, $$length = each_array.length; i < $$length; i++) {
+        each_array[i];
+        $$renderer2.push(`<button${attr_class("step-dot svelte-1tjvg83", void 0, { "active": i === currentStep })}${attr("aria-label", `Bước ${stringify(i + 1)}`)}${attr("aria-selected", i === currentStep)} role="tab" type="button"></button>`);
+      }
+      $$renderer2.push(`<!--]--></div> <div class="modal-actions svelte-1tjvg83"><button class="btn-text svelte-1tjvg83" type="button">Bỏ qua</button> `);
+      {
+        $$renderer2.push("<!--[-1-->");
+      }
+      $$renderer2.push(`<!--]--> <button class="btn-primary svelte-1tjvg83" type="button">${escape_html(currentStep < steps.length - 1 ? "Tiếp theo" : "Bắt đầu")} <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></button></div></div></div>`);
+    } else {
+      $$renderer2.push("<!--[-1-->");
+    }
+    $$renderer2.push(`<!--]-->`);
+  });
+}
+function CityLegend($$renderer, $$props) {
+  $$renderer.component(($$renderer2) => {
+    let expanded = false;
+    $$renderer2.push(`<div${attr_class("legend svelte-1yvkcm6", void 0, { "expanded": expanded })} role="region" aria-label="Chú thích bãi đỗ"><button class="legend-toggle svelte-1yvkcm6"${attr("aria-expanded", expanded)}${attr("aria-label", "Mở rộng chú thích")} type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> `);
+    {
+      $$renderer2.push("<!--[0-->");
+      $$renderer2.push(`<span>Chú thích</span>`);
+    }
+    $$renderer2.push(`<!--]--></button> `);
+    {
+      $$renderer2.push("<!--[-1-->");
+    }
+    $$renderer2.push(`<!--]--></div>`);
+  });
+}
+function LocationButton($$renderer, $$props) {
+  $$renderer.component(($$renderer2) => {
+    var $$store_subs;
+    const state = derived(() => store_get($$store_subs ??= {}, "$locationStore", locationStore).state);
+    $$renderer2.push(`<div class="location-fab-wrapper svelte-1tde8mt">`);
+    {
+      $$renderer2.push("<!--[-1-->");
+    }
+    $$renderer2.push(`<!--]--> <button${attr_class("location-fab svelte-1tde8mt", void 0, {
+      "requesting": state() === "requesting",
+      "granted": state() === "granted",
+      "denied": state() === "denied"
+    })}${attr("aria-label", state() === "requesting" ? "Đang tìm vị trí..." : state() === "granted" ? "Vị trí của tôi" : state() === "denied" ? "Vị trí bị chặn" : "Bật vị trí của tôi")}${attr("title", state() === "denied" ? "Vị trí bị chặn" : state() === "granted" ? "Vị trí của tôi" : "Bật vị trí của tôi")} type="button">`);
+    if (state() === "requesting") {
+      $$renderer2.push("<!--[0-->");
+      $$renderer2.push(`<div class="spinner svelte-1tde8mt"></div> <div class="pulse-ring svelte-1tde8mt"></div>`);
+    } else if (state() === "granted") {
+      $$renderer2.push("<!--[1-->");
+      $$renderer2.push(`<span class="icon-active svelte-1tde8mt">${html(LocationIcon)}</span>`);
+    } else if (state() === "denied") {
+      $$renderer2.push("<!--[2-->");
+      $$renderer2.push(`<span class="icon-denied svelte-1tde8mt"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svelte-1tde8mt"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" class="svelte-1tde8mt"></path><circle cx="12" cy="10" r="3" class="svelte-1tde8mt"></circle><line x1="3" y1="3" x2="21" y2="21" class="svelte-1tde8mt"></line></svg></span>`);
+    } else {
+      $$renderer2.push("<!--[-1-->");
+      $$renderer2.push(`${html(LocationIcon)}`);
+    }
+    $$renderer2.push(`<!--]--></button></div>`);
+    if ($$store_subs) unsubscribe_stores($$store_subs);
+  });
+}
+const vinhParkings = [
+  {
+    id: "v001",
+    name: "Vincom Plaza Vinh",
+    lat: 18.6732,
+    lng: 105.6738,
+    capacity: 300,
+    isFree: false,
+    freeReason: "Paid parking",
+    feePerHour: 20,
+    isWeekendFree: false
+  },
+  {
+    id: "v002",
+    name: "Quảng trường Hồ Chí Minh",
+    lat: 18.6701,
+    lng: 105.6814,
+    capacity: 100,
+    isFree: false,
+    freeReason: "Paid parking",
+    feePerHour: 15,
+    isWeekendFree: false
+  },
+  {
+    id: "v003",
+    name: "Bãi xe đường Cao Thắng",
+    lat: 18.6698,
+    lng: 105.6835,
+    capacity: 100,
+    isFree: false,
+    freeReason: "Paid parking",
+    feePerHour: 10,
+    isWeekendFree: false
+  },
+  {
+    id: "v004",
+    name: "Lotte Mart Vinh",
+    lat: 18.6935,
+    lng: 105.6915,
+    capacity: 50,
+    isFree: true,
+    freeReason: "Free with purchase",
+    feePerHour: 0,
+    isWeekendFree: false
+  },
+  {
+    id: "v005",
+    name: "Bến xe Vinh",
+    lat: 18.6689,
+    lng: 105.6856,
+    capacity: 60,
+    isFree: false,
+    freeReason: "Paid parking",
+    feePerHour: 20,
+    isWeekendFree: false
+  },
+  {
+    id: "v006",
+    name: "Bến xe Bắc Vinh",
+    lat: 18.6789,
+    lng: 105.7012,
+    capacity: 150,
+    isFree: true,
+    freeReason: "Free all day",
+    feePerHour: 0,
+    isWeekendFree: false
+  },
+  {
+    id: "v007",
+    name: "Ga Vinh",
+    lat: 18.6685,
+    lng: 105.6878,
+    capacity: 50,
+    isFree: false,
+    freeReason: "Paid parking",
+    feePerHour: 15,
+    isWeekendFree: false
+  },
+  {
+    id: "v008",
+    name: "BV Hữu nghị Đa khoa Nghệ An",
+    lat: 18.6956,
+    lng: 105.7012,
+    capacity: 60,
+    isFree: false,
+    freeReason: "Paid parking",
+    feePerHour: 5,
+    isWeekendFree: false
+  },
+  {
+    id: "v009",
+    name: "Sân bay Vinh",
+    lat: 18.7012,
+    lng: 105.6712,
+    capacity: 200,
+    isFree: false,
+    freeReason: "Paid parking",
+    feePerHour: 25,
+    isWeekendFree: false
+  },
+  {
+    id: "v010",
+    name: "Vinh Centre",
+    lat: 18.6712,
+    lng: 105.6798,
+    capacity: 100,
+    isFree: false,
+    freeReason: "Paid parking",
+    feePerHour: 15,
+    isWeekendFree: false
+  },
+  {
+    id: "v011",
+    name: "Big C Vinh (GO!)",
+    lat: 18.6698,
+    lng: 105.6765,
+    capacity: 80,
+    isFree: false,
+    freeReason: "Paid parking",
+    feePerHour: 15,
+    isWeekendFree: false
+  },
+  {
+    id: "v012",
+    name: "Bãi đỗ đường Lê Mao",
+    lat: 18.6789,
+    lng: 105.6898,
+    capacity: 60,
+    isFree: true,
+    freeReason: "Free all day",
+    feePerHour: 0,
+    isWeekendFree: false
+  },
+  {
+    id: "v013",
+    name: "Bãi đỗ Nguyễn Thị Minh Khai",
+    lat: 18.6756,
+    lng: 105.6912,
+    capacity: 50,
+    isFree: true,
+    freeReason: "Free all day",
+    feePerHour: 0,
+    isWeekendFree: false
+  },
+  {
+    id: "v014",
+    name: "Bãi đỗ Lê Hồng Phong",
+    lat: 18.6656,
+    lng: 105.6823,
+    capacity: 40,
+    isFree: true,
+    freeReason: "Free all day",
+    feePerHour: 0,
+    isWeekendFree: false
+  },
+  {
+    id: "v015",
+    name: "HC Vinh Mall",
+    lat: 18.6834,
+    lng: 105.6734,
+    capacity: 120,
+    isFree: false,
+    freeReason: "Paid parking",
+    feePerHour: 15,
+    isWeekendFree: false
+  },
+  {
+    id: "v016",
+    name: "Maximax Vinh",
+    lat: 18.6712,
+    lng: 105.6689,
+    capacity: 100,
+    isFree: false,
+    freeReason: "Paid parking",
+    feePerHour: 12,
+    isWeekendFree: false
+  },
+  {
+    id: "v017",
+    name: "Bãi xe Happy Park",
+    lat: 18.6956,
+    lng: 105.6723,
+    capacity: 80,
+    isFree: false,
+    freeReason: "Paid parking",
+    feePerHour: 20,
+    isWeekendFree: false
+  },
+  {
+    id: "v018",
+    name: "Chợ Vinh",
+    lat: 18.6689,
+    lng: 105.6845,
+    capacity: 80,
+    isFree: false,
+    freeReason: "Paid parking",
+    feePerHour: 10,
+    isWeekendFree: false
+  },
+  {
+    id: "v019",
+    name: "Đại học Vinh",
+    lat: 18.6834,
+    lng: 105.6923,
+    capacity: 150,
+    isFree: true,
+    freeReason: "Free 2h",
+    feePerHour: 0,
+    isWeekendFree: false
+  },
+  {
+    id: "v020",
+    name: "Trường ĐH Bách khoa Vinh",
+    lat: 18.6867,
+    lng: 105.6856,
+    capacity: 100,
+    isFree: true,
+    freeReason: "Free all day",
+    feePerHour: 0,
+    isWeekendFree: false
+  }
+];
+const vinhCenter = {
+  lat: 18.6795,
+  lng: 105.6875
+};
+const kosiceParkings = [
+  {
+    id: "p001",
+    name: "Aupark Shopping Center",
+    lat: 48.7215,
+    lng: 21.2581,
+    capacity: 400,
+    isFree: false,
+    freeReason: "Paid parking",
+    feePerHour: 2,
+    isWeekendFree: false
+  },
+  {
+    id: "p002",
+    name: "Staničné námestie",
+    lat: 48.7198,
+    lng: 21.2612,
+    capacity: 150,
+    isFree: true,
+    freeReason: "Free all day",
+    feePerHour: 0,
+    isWeekendFree: false
+  },
+  {
+    id: "p003",
+    name: "OC Galéria Košice",
+    lat: 48.7234,
+    lng: 21.2567,
+    capacity: 300,
+    isFree: false,
+    freeReason: "Paid parking",
+    feePerHour: 1.5,
+    isWeekendFree: false
+  },
+  {
+    id: "p004",
+    name: "OC Cassovar",
+    lat: 48.7189,
+    lng: 21.2523,
+    capacity: 200,
+    isFree: true,
+    freeReason: "Free 2h",
+    feePerHour: 0,
+    isWeekendFree: false
+  },
+  {
+    id: "p005",
+    name: "Železničná stanica Košice",
+    lat: 48.7201,
+    lng: 21.2645,
+    capacity: 100,
+    isFree: false,
+    freeReason: "Paid parking",
+    feePerHour: 2.5,
+    isWeekendFree: false
+  },
+  {
+    id: "p006",
+    name: "Tesco Extra Košice",
+    lat: 48.7256,
+    lng: 21.2412,
+    capacity: 250,
+    isFree: true,
+    freeReason: "Free with purchase",
+    feePerHour: 0,
+    isWeekendFree: false
+  },
+  {
+    id: "p007",
+    name: "Ťahanovce Centrum",
+    lat: 48.7145,
+    lng: 21.2689,
+    capacity: 80,
+    isFree: true,
+    freeReason: "Free all day",
+    feePerHour: 0,
+    isWeekendFree: false
+  },
+  {
+    id: "p008",
+    name: "OC Arena Košice",
+    lat: 48.7089,
+    lng: 21.2578,
+    capacity: 180,
+    isFree: false,
+    freeReason: "Paid parking",
+    feePerHour: 1.8,
+    isWeekendFree: false
+  },
+  {
+    id: "p009",
+    name: "Košice - Barca",
+    lat: 48.7301,
+    lng: 21.2534,
+    capacity: 120,
+    isFree: true,
+    freeReason: "Free all day",
+    feePerHour: 0,
+    isWeekendFree: false
+  },
+  {
+    id: "p010",
+    name: "Billa Košice",
+    lat: 48.7156,
+    lng: 21.2434,
+    capacity: 60,
+    isFree: true,
+    freeReason: "Free 90min",
+    feePerHour: 0,
+    isWeekendFree: false
+  },
+  {
+    id: "p011",
+    name: "Metro Košice",
+    lat: 48.7298,
+    lng: 21.2412,
+    capacity: 180,
+    isFree: false,
+    freeReason: "Paid parking",
+    feePerHour: 1.2,
+    isWeekendFree: false
+  },
+  {
+    id: "p012",
+    name: "Lidl Moldava",
+    lat: 48.7123,
+    lng: 21.2798,
+    capacity: 90,
+    isFree: true,
+    freeReason: "Free all day",
+    feePerHour: 0,
+    isWeekendFree: false
+  },
+  {
+    id: "p013",
+    name: "Kaufland Košice",
+    lat: 48.7356,
+    lng: 21.2489,
+    capacity: 220,
+    isFree: false,
+    freeReason: "Paid parking",
+    feePerHour: 1,
+    isWeekendFree: false
+  },
+  {
+    id: "p014",
+    name: "dm Drogerie",
+    lat: 48.7178,
+    lng: 21.2534,
+    capacity: 40,
+    isFree: true,
+    freeReason: "Free 30min",
+    feePerHour: 0,
+    isWeekendFree: false
+  },
+  {
+    id: "p015",
+    name: "Košice - Sever",
+    lat: 48.7423,
+    lng: 21.2456,
+    capacity: 110,
+    isFree: true,
+    freeReason: "Free all day",
+    feePerHour: 0,
+    isWeekendFree: false
+  },
+  {
+    id: "p016",
+    name: "Šaca Shopping",
+    lat: 48.6989,
+    lng: 21.2789,
+    capacity: 150,
+    isFree: false,
+    freeReason: "Paid parking",
+    feePerHour: 1.5,
+    isWeekendFree: false
+  },
+  {
+    id: "p017",
+    name: "Košice - Juh",
+    lat: 48.7056,
+    lng: 21.2356,
+    capacity: 95,
+    isFree: true,
+    freeReason: "Free 2h",
+    feePerHour: 0,
+    isWeekendFree: false
+  },
+  {
+    id: "p018",
+    name: "Indepo Košice",
+    lat: 48.7267,
+    lng: 21.2678,
+    capacity: 200,
+    isFree: false,
+    freeReason: "Paid parking",
+    feePerHour: 1.8,
+    isWeekendFree: false
+  },
+  {
+    id: "p019",
+    name: "Fructop Košice",
+    lat: 48.7134,
+    lng: 21.2512,
+    capacity: 50,
+    isFree: true,
+    freeReason: "Free 1h",
+    feePerHour: 0,
+    isWeekendFree: false
+  },
+  {
+    id: "p020",
+    name: "ZOO Košice",
+    lat: 48.7389,
+    lng: 21.2723,
+    capacity: 75,
+    isFree: true,
+    freeReason: "Free on weekends",
+    feePerHour: 0,
+    isWeekendFree: true
+  },
+  {
+    id: "p021",
+    name: "Tech Garden",
+    lat: 48.7223,
+    lng: 21.2434,
+    capacity: 120,
+    isFree: false,
+    freeReason: "Paid parking",
+    feePerHour: 2,
+    isWeekendFree: false
+  },
+  {
+    id: "p022",
+    name: "UNLP Košice",
+    lat: 48.7291,
+    lng: 21.2567,
+    capacity: 300,
+    isFree: false,
+    freeReason: "Staff only",
+    feePerHour: 0,
+    isWeekendFree: false
+  },
+  {
+    id: "p023",
+    name: "Košice - Džungľa",
+    lat: 48.7156,
+    lng: 21.2645,
+    capacity: 60,
+    isFree: true,
+    freeReason: "Free all day",
+    feePerHour: 0,
+    isWeekendFree: false
+  },
+  {
+    id: "p024",
+    name: "Avion Shopping",
+    lat: 48.6923,
+    lng: 21.2489,
+    capacity: 250,
+    isFree: false,
+    freeReason: "Paid parking",
+    feePerHour: 1.5,
+    isWeekendFree: false
+  },
+  {
+    id: "p025",
+    name: "Košice - KVP",
+    lat: 48.7312,
+    lng: 21.2389,
+    capacity: 85,
+    isFree: true,
+    freeReason: "Free 3h",
+    feePerHour: 0,
+    isWeekendFree: false
+  }
+];
+const kosiceCenter = {
+  lat: 48.72,
+  lng: 21.26
+};
+const cities = [
+  {
+    id: "vinh",
+    name: "Vinh",
+    nameVi: "Thành phố Vinh",
+    center: vinhCenter,
+    parkings: vinhParkings
+  },
+  {
+    id: "kosice",
+    name: "Košice",
+    nameVi: "Košice",
+    center: kosiceCenter,
+    parkings: kosiceParkings
+  }
+];
+function getParkingCounts() {
+  return cities.reduce((acc, city) => {
+    acc[city.id] = city.parkings.length;
+    return acc;
+  }, {});
 }
 function _page($$renderer, $$props) {
   $$renderer.component(($$renderer2) => {
@@ -267,14 +972,15 @@ function _page($$renderer, $$props) {
     let selectedParking = derived(() => parkings.find((p) => p.id === selectedParkingId) || null);
     let userLocation = null;
     let showPanel = false;
-    let isLoading = true;
-    let isInitialLoad = true;
+    let isLoading = false;
     let parkingCount = 0;
     let currentBounds = { south: 48.7, west: 21.23, north: 48.75, east: 21.28 };
     let lastFetchKey = "";
     let fetchError = null;
     let retryCount = 0;
     let currentCityId = "kosice";
+    let showWelcome = false;
+    const cityCounts = getParkingCounts();
     const OVERPASS_ENDPOINTS = [
       "https://overpass-api.de/api/interpreter",
       "https://overpass.kumi.systems/api/interpreter",
@@ -385,7 +1091,6 @@ out center;`;
         }
       }
       isLoading = false;
-      isInitialLoad = false;
     }
     let fetchTimeout = null;
     function handleMapMove(center, zoom) {
@@ -420,16 +1125,11 @@ out center;`;
       $$renderer3.push(`<meta name="description" content="T-Map - Tìm kiếm và định vị bãi đỗ xe nhanh chóng"/> <meta name="theme-color" content="#2563eb"/>`);
     });
     $$renderer2.push(`<div class="app-container">`);
-    if (isInitialLoad && isLoading) {
-      $$renderer2.push("<!--[0-->");
-      $$renderer2.push(`<div class="loading-overlay" role="status" aria-label="Đang tải"><div class="loading-icon">${html(ParkingIcon)}</div> <p class="loading-text">Đang tải bãi đỗ xe...</p> <p class="loading-subtext svelte-1uha8ag">Kết nối với OpenStreetMap</p></div>`);
-    } else {
-      $$renderer2.push("<!--[-1-->");
-    }
-    $$renderer2.push(`<!--]--> `);
     Header($$renderer2, {
+      onShowHelp: () => showWelcome = true,
       isListOpen: showPanel,
-      currentCity: currentCityId
+      currentCity: currentCityId,
+      cityCounts
     });
     $$renderer2.push(`<!----> <div class="map-wrapper">`);
     Map_1($$renderer2, {
@@ -441,16 +1141,13 @@ out center;`;
       onUserLocationChange: handleUserLocationChange
     });
     $$renderer2.push(`<!----> `);
+    CityLegend($$renderer2);
+    $$renderer2.push(`<!----> `);
+    LocationButton($$renderer2);
+    $$renderer2.push(`<!----> `);
     if (fetchError) {
       $$renderer2.push("<!--[0-->");
       $$renderer2.push(`<div class="error-toast svelte-1uha8ag" role="alert"><span>${escape_html(fetchError)}</span> <button class="retry-btn svelte-1uha8ag">Thử lại</button> <button class="dismiss-btn svelte-1uha8ag" aria-label="Đóng"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></div>`);
-    } else {
-      $$renderer2.push("<!--[-1-->");
-    }
-    $$renderer2.push(`<!--]--> `);
-    if (isLoading && !isInitialLoad) {
-      $$renderer2.push("<!--[0-->");
-      $$renderer2.push(`<div class="mini-loading svelte-1uha8ag"><div class="mini-spinner svelte-1uha8ag"></div> <span>Cập nhật...</span></div>`);
     } else {
       $$renderer2.push("<!--[-1-->");
     }
@@ -459,13 +1156,16 @@ out center;`;
       parkings: getFilteredParkings(),
       selectedParking: selectedParking(),
       userLocation,
-      isOpen: showPanel
+      isOpen: showPanel,
+      isLoading
     });
     $$renderer2.push(`<!----> `);
     {
       $$renderer2.push("<!--[-1-->");
     }
-    $$renderer2.push(`<!--]--> <button class="fab" aria-label="Vị trí của tôi" title="Vị trí của tôi">${html(LocationIcon)}</button></div>`);
+    $$renderer2.push(`<!--]--> `);
+    WelcomeModal($$renderer2, { isOpen: showWelcome });
+    $$renderer2.push(`<!----></div>`);
   });
 }
 export {
