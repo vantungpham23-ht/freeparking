@@ -5,6 +5,7 @@
   import Header from '$lib/components/Header.svelte';
   import { CheckIcon, LocationIcon, ParkingIcon } from '$lib/icons';
   import type { Parking } from '$lib/types';
+  import { cities, detectCity, getParkingForCity, vinhCenter, kosiceCenter } from '$lib/data';
 
   let parkings = $state<Parking[]>([]);
   let selectedParkingId = $state<string | null>(null);
@@ -22,6 +23,7 @@
   let isSearching = $state(false);
   let fetchError = $state<string | null>(null);
   let retryCount = $state(0);
+  let currentCityId = $state<string>('kosice');
 
   const OVERPASS_ENDPOINTS = [
     'https://overpass-api.de/api/interpreter',
@@ -150,6 +152,31 @@
     })).sort((a, b) => (a.distance || 0) - (b.distance || 0));
   }
 
+  function loadLocalParkings(cityId: string) {
+    const cityParkings = getParkingForCity(cityId);
+    return cityParkings;
+  }
+
+  function switchCity(cityId: string) {
+    currentCityId = cityId;
+    const city = cities.find(c => c.id === cityId);
+    if (city) {
+      currentBounds = {
+        south: city.center.lat - 0.05,
+        west: city.center.lng - 0.05,
+        north: city.center.lat + 0.05,
+        east: city.center.lng + 0.05,
+      };
+      
+      if (mapComponent) {
+        mapComponent.flyTo(city.center.lat, city.center.lng, 14);
+      }
+      
+      parkings = loadLocalParkings(cityId);
+      parkingCount = parkings.length;
+    }
+  }
+
   async function fetchParkings(bounds: typeof currentBounds, immediate = false) {
     const minChange = 0.005;
     
@@ -233,13 +260,26 @@ out center;`;
   }
 
   onMount(async () => {
-    await fetchParkings(currentBounds, true);
+    // Load local parking data for Košice (default city)
+    parkings = loadLocalParkings(currentCityId);
+    parkingCount = parkings.length;
+    isLoading = false;
+    isInitialLoad = false;
   });
 
   let fetchTimeout: ReturnType<typeof setTimeout> | null = null;
 
   function handleSearch(query: string, radiusKm: number) {
     searchRadius = radiusKm;
+    
+    // Check if searching for Vinh
+    const queryLower = query.toLowerCase();
+    if (queryLower.includes('vinh') || queryLower.includes('nghệ an')) {
+      switchCity('vinh');
+    } else {
+      switchCity('kosice');
+    }
+    
     searchLocation(query, radiusKm);
   }
 
@@ -319,7 +359,9 @@ out center;`;
     onMyLocation={handleMyLocation}
     onSearch={handleSearch}
     onRadiusChange={handleRadiusChange}
+    onCityChange={switchCity}
     isListOpen={showPanel}
+    currentCity={currentCityId}
   />
 
   <!-- Map -->

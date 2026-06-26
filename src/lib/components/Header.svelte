@@ -6,10 +6,12 @@
     onMyLocation?: () => void;
     onSearch?: (query: string, radiusKm: number) => void;
     onRadiusChange?: (radiusKm: number) => void;
+    onCityChange?: (cityId: string) => void;
     isListOpen?: boolean;
+    currentCity?: string;
   }
 
-  let { onToggleList, onMyLocation, onSearch, onRadiusChange, isListOpen = false }: Props = $props();
+  let { onToggleList, onMyLocation, onSearch, onRadiusChange, onCityChange, isListOpen = false, currentCity = 'kosice' }: Props = $props();
 
   let searchQuery = $state('');
   let radiusKm = $state(2);
@@ -33,6 +35,9 @@
     'Košice center',
     'Železničná stanica',
     'OC Galéria',
+    'Vincom Vinh',
+    'Quảng trường Hồ Chí Minh Vinh',
+    'Bến xe Vinh',
   ];
 
   async function searchLocation(query: string) {
@@ -126,6 +131,25 @@
     {@html ParkingIcon}
     <span>T-map</span>
   </a>
+
+  <div class="city-selector">
+    <button 
+      class="city-btn" 
+      class:active={currentCity === 'kosice'}
+      onclick={() => onCityChange?.('kosice')}
+      type="button"
+    >
+      Košice
+    </button>
+    <button 
+      class="city-btn" 
+      class:active={currentCity === 'vinh'}
+      onclick={() => onCityChange?.('vinh')}
+      type="button"
+    >
+      Vinh
+    </button>
+  </div>
 
   <div class="search-container">
     <div class="search-box" class:searching={isSearching}>
@@ -252,6 +276,36 @@
 </header>
 
 <style>
+  .city-selector {
+    display: flex;
+    gap: 4px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    padding: 4px;
+  }
+
+  .city-btn {
+    padding: 6px 14px;
+    border: none;
+    border-radius: var(--radius-full);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-secondary);
+    transition: all 0.15s ease;
+  }
+
+  .city-btn:hover {
+    color: var(--text-primary);
+  }
+
+  .city-btn.active {
+    background: var(--accent);
+    color: white;
+  }
+
   .search-container {
     flex: 1;
     max-width: 480px;
@@ -475,6 +529,16 @@
   @media (max-width: 640px) {
     .search-container {
       max-width: none;
+    }
+
+    .city-selector {
+      gap: 2px;
+      padding: 3px;
+    }
+
+    .city-btn {
+      padding: 4px 10px;
+      font-size: 12px;
     }
 
     .search-box {
