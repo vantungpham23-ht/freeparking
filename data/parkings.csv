@@ -1,0 +1,26 @@
+id,name,lat,lng,capacity,isFree,freeReason,feePerHour
+p001,Aupark Shopping Center,48.7215,21.2581,400,false,Paid parking,2.0
+p002,Staničné námestie,48.7198,21.2612,150,true,Free all day,0
+p003,OC Galéria Košice,48.7234,21.2567,300,false,Paid parking,1.5
+p004,OC Cassovar,48.7189,21.2523,200,true,Free 2h,0
+p005,Železničná stanica Košice,48.7201,21.2645,100,false,Paid parking,2.5
+p006,Tesco Extra Košice,48.7256,21.2412,250,true,Free with purchase,0
+p007,Ťahanovce Centrum,48.7145,21.2689,80,true,Free all day,0
+p008,OC Arena Košice,48.7089,21.2578,180,false,Paid parking,1.8
+p009,Košice - Barca,48.7301,21.2534,120,true,Free all day,0
+p010,Billa Košice,48.7156,21.2434,60,true,Free 90min,0
+p011,Metro Košice,48.7298,21.2412,180,false,Paid parking,1.2
+p012,Lidl Moldava,48.7123,21.2798,90,true,Free all day,0
+p013,Kaufland Košice,48.7356,21.2489,220,false,Paid parking,1.0
+p014, dm Drogerie,48.7178,21.2534,40,true,Free 30min,0
+p015,Košice - Sever,48.7423,21.2456,110,true,Free all day,0
+p016,Šaca Shopping,48.6989,21.2789,150,false,Paid parking,1.5
+p017,Košice - Juh,48.7056,21.2356,95,true,Free 2h,0
+p018,Indepo Košice,48.7267,21.2678,200,false,Paid parking,1.8
+p019,Fructop Košice,48.7134,21.2512,50,true,Free 1h,0
+p020,ZOO Košice,48.7389,21.2723,75,true,Free on weekends,0
+p021,Tech Garden,48.7223,21.2434,120,false,Paid parking,2.0
+p022,UNLP Košice,48.7291,21.2567,300,false,Staff only,0
+p023,Košice - Džungľa,48.7156,21.2645,60,true,Free all day,0
+p024,Avion Shopping,48.6923,21.2489,250,false,Paid parking,1.5
+p025,Košice - KVP,48.7312,21.2389,85,true,Free 3h,0
