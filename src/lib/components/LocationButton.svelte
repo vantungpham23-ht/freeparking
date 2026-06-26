@@ -1,6 +1,6 @@
 <script lang="ts">
   import { locationStore, type LocationState } from '$lib/stores/location';
-  import { LocationIcon } from '$lib/icons';
+  import Icon from './Icon.svelte';
 
   interface Props {
     onClick: () => void;
@@ -12,7 +12,6 @@
   let tooltipMessage = $state('');
 
   const state = $derived($locationStore.state);
-  const hasCoords = $derived($locationStore.coords !== null);
 
   function handleClick() {
     if (state === 'denied') {
@@ -59,17 +58,17 @@
       <div class="spinner"></div>
       <div class="pulse-ring"></div>
     {:else if state === 'granted'}
-      <span class="icon-active">{@html LocationIcon}</span>
+      <span class="icon-active"><Icon name="location" size={22} /></span>
     {:else if state === 'denied'}
       <span class="icon-denied">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
           <circle cx="12" cy="10" r="3"/>
           <line x1="3" y1="3" x2="21" y2="21"/>
         </svg>
       </span>
     {:else}
-      {@html LocationIcon}
+      <Icon name="location" size={22} />
     {/if}
   </button>
 </div>
@@ -86,31 +85,33 @@
     position: relative;
     width: 56px;
     height: 56px;
-    border-radius: var(--radius-lg);
+    border-radius: 50%;
     background: var(--bg);
-    border: none;
+    border: 1.5px solid var(--border-light);
     box-shadow: var(--shadow-lg);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     color: var(--accent);
-    transition: all 0.2s var(--ease-out);
+    transition: all 0.25s var(--ease-spring);
     overflow: visible;
   }
 
   .location-fab:hover {
-    box-shadow: var(--shadow-xl);
-    transform: translateY(-2px);
+    box-shadow: var(--shadow-xl), 0 0 24px rgba(99, 102, 241, 0.2);
+    transform: translateY(-3px) scale(1.05);
+    border-color: var(--accent-light);
   }
 
   .location-fab:active {
-    transform: scale(0.95);
+    transform: scale(0.92);
   }
 
   .location-fab.granted {
-    color: var(--success);
-    background: var(--success-light);
+    color: white;
+    background: var(--gradient-primary);
+    border-color: transparent;
   }
 
   .location-fab.denied {
@@ -119,8 +120,8 @@
   }
 
   .location-fab svg {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
   }
 
   .icon-active,
@@ -131,9 +132,9 @@
   }
 
   .spinner {
-    width: 24px;
-    height: 24px;
-    border: 3px solid var(--border-light);
+    width: 22px;
+    height: 22px;
+    border: 3px solid var(--accent-light);
     border-top-color: var(--accent);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
@@ -141,20 +142,20 @@
 
   .pulse-ring {
     position: absolute;
-    inset: -4px;
-    border-radius: var(--radius-lg);
-    border: 2px solid var(--accent);
+    inset: -6px;
+    border-radius: 50%;
+    border: 2.5px solid var(--accent);
     animation: pulse-ring 1.4s ease-out infinite;
     pointer-events: none;
   }
 
   @keyframes pulse-ring {
     0% {
-      transform: scale(0.9);
-      opacity: 0.8;
+      transform: scale(0.85);
+      opacity: 0.7;
     }
     100% {
-      transform: scale(1.15);
+      transform: scale(1.25);
       opacity: 0;
     }
   }
@@ -165,18 +166,18 @@
 
   .tooltip {
     position: absolute;
-    bottom: calc(100% + 8px);
+    bottom: calc(100% + 10px);
     right: 0;
     background: var(--text-primary);
     color: white;
-    padding: 8px 12px;
+    padding: 8px 14px;
     border-radius: var(--radius);
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
     white-space: nowrap;
     max-width: 240px;
     box-shadow: var(--shadow-lg);
-    animation: tooltipIn 0.2s ease-out;
+    animation: tooltipIn 0.25s var(--ease-spring);
     z-index: 160;
   }
 

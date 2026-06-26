@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ParkingIcon, SearchIcon, MenuIcon, CloseIcon } from '$lib/icons';
+  import Icon from './Icon.svelte';
 
   interface Props {
     onToggleList?: () => void;
@@ -138,7 +138,7 @@
 
 <header class="header">
   <a href="/" class="header-logo" aria-label="T-Map - Trang chủ">
-    {@html ParkingIcon}
+    <Icon name="parking" size={22} />
     <span>T-map</span>
   </a>
 
@@ -169,8 +169,8 @@
 
   <div class="search-container">
     <div class="search-box" class:searching={isSearching}>
-      <span class="search-icon">{@html SearchIcon}</span>
-      
+      <span class="search-icon"><Icon name="search" size={18} /></span>
+
       <div class="input-wrapper">
         <input 
           type="text" 
@@ -191,13 +191,13 @@
         />
         
         {#if searchQuery}
-          <button 
-            class="clear-btn" 
+          <button
+            class="clear-btn"
             onclick={clearSearch}
             aria-label="Xóa tìm kiếm"
             type="button"
           >
-            {@html CloseIcon}
+            <Icon name="close" size={14} />
           </button>
         {/if}
       </div>
@@ -278,24 +278,20 @@
         title="Hướng dẫn"
         type="button"
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-          <line x1="12" y1="17" x2="12.01" y2="17"/>
-        </svg>
+        <Icon name="help" size={20} />
       </button>
     {/if}
 
     <button
-      class="icon-btn"
-      class:active={isListOpen}
-      onclick={onToggleList}
-      aria-label={isListOpen ? 'Đóng danh sách' : 'Mở danh sách bãi đỗ'}
-      title={isListOpen ? 'Đóng danh sách' : 'Mở danh sách'}
-      type="button"
-    >
-      {@html MenuIcon}
-    </button>
+        class="icon-btn"
+        class:active={isListOpen}
+        onclick={onToggleList}
+        aria-label={isListOpen ? 'Đóng danh sách' : 'Mở danh sách bãi đỗ'}
+        title={isListOpen ? 'Đóng danh sách' : 'Mở danh sách'}
+        type="button"
+      >
+        <Icon name="menu" size={20} />
+      </button>
   </div>
 </header>
 
@@ -304,7 +300,7 @@
     display: flex;
     gap: 4px;
     background: var(--bg-secondary);
-    border: 1px solid var(--border);
+    border: 1.5px solid var(--border-light);
     border-radius: var(--radius-full);
     padding: 4px;
   }
@@ -314,11 +310,11 @@
     border: none;
     border-radius: var(--radius-full);
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 700;
     cursor: pointer;
     background: transparent;
     color: var(--text-secondary);
-    transition: all 0.15s ease;
+    transition: all 0.2s var(--ease-spring);
     display: flex;
     align-items: center;
     gap: 6px;
@@ -329,8 +325,9 @@
   }
 
   .city-btn.active {
-    background: var(--accent);
+    background: var(--gradient-primary);
     color: white;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
   }
 
   .city-count {
@@ -420,21 +417,11 @@
     color: var(--text-primary);
   }
 
-  .clear-btn :global(svg) {
-    width: 14px;
-    height: 14px;
-  }
-
   .search-icon {
     color: var(--text-muted);
     flex-shrink: 0;
     display: flex;
     align-items: center;
-  }
-
-  .search-icon :global(svg) {
-    width: 18px;
-    height: 18px;
   }
 
   .radius-select {

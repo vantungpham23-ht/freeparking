@@ -12,32 +12,32 @@
 
   const steps = [
     {
-      icon: 'pin',
-      iconColor: '#2563eb',
-      iconBg: '#dbeafe',
-      title: 'Chào mừng đến với T-Map',
-      description: 'Ứng dụng giúp bạn tìm kiếm và định vị bãi đỗ xe nhanh chóng tại Košice và Vinh.',
+      icon: 'sparkle',
+      iconColor: '#6366f1',
+      iconBg: 'linear-gradient(135deg, #eef2ff 0%, #fce7f3 100%)',
+      title: 'Chào bạn! 👋',
+      description: 'T-Map giúp bạn tìm bãi đỗ xe gần nhất một cách nhanh chóng và dễ thương.',
     },
     {
       icon: 'city',
       iconColor: '#10b981',
-      iconBg: '#d1fae5',
-      title: 'Chọn thành phố của bạn',
-      description: 'Chuyển đổi giữa Košice (Slovakia) và Vinh (Việt Nam) bằng nút ở góc trên bên trái.',
+      iconBg: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
+      title: 'Chọn thành phố 🏙️',
+      description: 'Chuyển đổi giữa Košice (Slovakia) và Vinh (Việt Nam) chỉ với một cú chạm.',
+    },
+    {
+      icon: 'pin',
+      iconColor: '#ec4899',
+      iconBg: 'linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%)',
+      title: 'Chọn điểm đến 📍',
+      description: 'Nhấn nút "Đi đâu?" rồi chạm vào bất kỳ đâu trên bản đồ để xem các bãi đỗ gần đó.',
     },
     {
       icon: 'filter',
       iconColor: '#f59e0b',
-      iconBg: '#fef3c7',
-      title: 'Lọc bãi đỗ theo nhu cầu',
-      description: 'Lọc theo miễn phí, trả phí hoặc cuối tuần miễn phí. Sắp xếp theo khoảng cách hoặc sức chứa.',
-    },
-    {
-      icon: 'navigate',
-      iconColor: '#8b5cf6',
-      iconBg: '#ede9fe',
-      title: 'Chỉ đường dễ dàng',
-      description: 'Nhấn nút định vị để mở Google Maps/Apple Maps và dẫn đường đến bãi đỗ gần nhất.',
+      iconBg: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+      title: 'Lọc thông minh ✨',
+      description: 'Tìm bãi miễn phí, trả phí hoặc cuối tuần miễn phí. Sắp xếp theo khoảng cách hoặc sức chứa.',
     },
   ];
 
@@ -104,20 +104,28 @@
       </button>
 
       <div class="modal-icon" style="background: {step.iconBg}; color: {step.iconColor}">
-        {#if step.icon === 'pin'}
+        {#if step.icon === 'sparkle'}
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-            <circle cx="12" cy="10" r="3"/>
+            <path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z"/>
           </svg>
         {:else if step.icon === 'city'}
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 21h18"/>
             <path d="M5 21V7l8-4v18"/>
             <path d="M19 21V11l-6-4"/>
+            <circle cx="9" cy="10" r="1" fill="currentColor"/>
+            <circle cx="9" cy="14" r="1" fill="currentColor"/>
+            <circle cx="16" cy="14" r="1" fill="currentColor"/>
+          </svg>
+        {:else if step.icon === 'pin'}
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+            <circle cx="12" cy="10" r="3"/>
           </svg>
         {:else if step.icon === 'filter'}
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
           </svg>
         {:else if step.icon === 'navigate'}
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -195,13 +203,13 @@
 
   .modal-content {
     background: var(--bg);
-    border-radius: var(--radius-xl);
-    padding: 32px 28px 24px;
+    border-radius: var(--radius-2xl);
+    padding: 36px 28px 24px;
     max-width: 420px;
     width: 100%;
     position: relative;
     box-shadow: var(--shadow-xl);
-    animation: slideUp 0.3s var(--ease-spring);
+    animation: slideUp 0.4s var(--ease-spring);
   }
 
   .close-btn {
@@ -218,31 +226,39 @@
     align-items: center;
     justify-content: center;
     color: var(--text-secondary);
-    transition: all 0.15s ease;
+    transition: all 0.2s var(--ease-spring);
   }
 
   .close-btn:hover {
-    background: var(--border);
-    color: var(--text-primary);
+    background: var(--error-light);
+    color: var(--error);
+    transform: rotate(90deg);
   }
 
   .modal-icon {
-    width: 64px;
-    height: 64px;
-    border-radius: var(--radius-lg);
+    width: 72px;
+    height: 72px;
+    border-radius: var(--radius-xl);
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 auto 20px;
+    animation: bounce-icon 2s ease-in-out infinite;
+  }
+
+  @keyframes bounce-icon {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.06); }
   }
 
   .modal-title {
-    font-size: 20px;
-    font-weight: 700;
+    font-size: 22px;
+    font-weight: 800;
     color: var(--text-primary);
     text-align: center;
     margin-bottom: 8px;
     line-height: 1.3;
+    letter-spacing: -0.5px;
   }
 
   .modal-description {
@@ -251,6 +267,7 @@
     text-align: center;
     line-height: 1.6;
     margin-bottom: 24px;
+    font-weight: 500;
   }
 
   .step-indicators {
@@ -263,18 +280,17 @@
   .step-dot {
     width: 8px;
     height: 8px;
-    border-radius: 50%;
+    border-radius: 9999px;
     background: var(--border);
     border: none;
     cursor: pointer;
     padding: 0;
-    transition: all 0.2s ease;
+    transition: all 0.3s var(--ease-spring);
   }
 
   .step-dot.active {
-    background: var(--accent);
-    width: 24px;
-    border-radius: 4px;
+    background: var(--gradient-primary);
+    width: 28px;
   }
 
   .modal-actions {
@@ -290,7 +306,7 @@
     color: var(--text-muted);
     padding: 10px 16px;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     margin-right: auto;
     border-radius: var(--radius);
@@ -303,42 +319,45 @@
 
   .btn-secondary {
     background: var(--bg-secondary);
-    border: 1px solid var(--border);
+    border: 1.5px solid var(--border-light);
     color: var(--text-primary);
     padding: 10px 18px;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
-    border-radius: var(--radius);
-    transition: all 0.15s ease;
+    border-radius: var(--radius-full);
+    transition: all 0.2s var(--ease-spring);
   }
 
   .btn-secondary:hover {
-    background: var(--border-light);
-  }
-
-  .btn-primary {
-    background: var(--accent);
-    border: none;
-    color: white;
-    padding: 10px 20px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    border-radius: var(--radius);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.15s ease;
-  }
-
-  .btn-primary:hover {
-    background: var(--accent-hover);
+    background: var(--bg);
+    border-color: var(--accent-light);
     transform: translateY(-1px);
   }
 
+  .btn-primary {
+    background: var(--gradient-primary);
+    border: none;
+    color: white;
+    padding: 10px 22px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s var(--ease-spring);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+  }
+
   .btn-primary:active {
-    transform: scale(0.98);
+    transform: scale(0.96);
   }
 
   @keyframes fadeIn {

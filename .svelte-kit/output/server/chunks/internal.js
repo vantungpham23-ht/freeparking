@@ -103,7 +103,7 @@ const options = {
     app: ({ head, body, assets, nonce, env }) => '<!doctype html>\n<html lang="vi">\n	<head>\n		<meta charset="utf-8" />\n		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />\n		<meta name="color-scheme" content="light" />\n		<meta http-equiv="X-UA-Compatible" content="IE=edge" />\n		' + head + '\n	</head>\n	<body data-sveltekit-preload-data="hover">\n		<div style="display: contents">' + body + "</div>\n	</body>\n</html>\n",
     error
   },
-  version_hash: "1wm16j7"
+  version_hash: "3kyat0"
 };
 async function get_hooks() {
   let handle;

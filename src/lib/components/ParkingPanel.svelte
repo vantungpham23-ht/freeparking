@@ -1,8 +1,8 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import type { Parking } from '$lib/types';
-  import { ParkingIcon, NavigateIcon, CarIcon, SortIcon, FilterIcon } from '$lib/icons';
   import SkeletonCard from './SkeletonCard.svelte';
+  import Icon from './Icon.svelte';
 
   interface Props {
     parkings: Parking[];
@@ -153,7 +153,7 @@
   
   <div class="panel-header">
     <div class="panel-title">
-      {@html ParkingIcon}
+      <Icon name="parking" size={18} />
       <span>Bãi đỗ xe</span>
       <span class="panel-count">{filteredParkings.length}</span>
     </div>
@@ -168,7 +168,7 @@
           aria-label="Lọc bãi đỗ"
           aria-expanded={showFilterMenu}
         >
-          {@html FilterIcon}
+          <Icon name="filter" size={18} />
         </button>
         
         {#if showFilterMenu}
@@ -221,7 +221,7 @@
           aria-label="Sắp xếp"
           aria-expanded={showSortMenu}
         >
-          {@html SortIcon}
+          <Icon name="sort" size={18} />
         </button>
         
         {#if showSortMenu}
@@ -262,7 +262,7 @@
     {:else if parkings.length === 0}
       <div class="empty-state">
         <div class="empty-icon">
-          {@html CarIcon}
+          <Icon name="car" size={36} />
         </div>
         <p class="empty-title">Không có bãi đỗ</p>
         <p class="empty-text">Di chuyển bản đồ để tìm bãi đỗ xe</p>
@@ -270,7 +270,7 @@
     {:else if filteredParkings.length === 0}
       <div class="empty-state">
         <div class="empty-icon">
-          {@html FilterIcon}
+          <Icon name="filter" size={18} />
         </div>
         <p class="empty-title">Không tìm thấy</p>
         <p class="empty-text">Thử thay đổi bộ lọc</p>
@@ -345,7 +345,7 @@
             title="Chỉ đường"
             aria-label="Chỉ đường đến {parking.name}"
           >
-            {@html NavigateIcon}
+            <Icon name="navigate" size={18} />
           </button>
         </div>
       {/each}
@@ -372,6 +372,7 @@
     cursor: pointer;
     color: var(--text-secondary);
     transition: all 0.15s var(--ease-out);
+    padding: 0;
   }
 
   .panel-action-btn:hover {
@@ -383,11 +384,6 @@
     background: var(--accent-light);
     border-color: var(--accent);
     color: var(--accent);
-  }
-
-  .panel-action-btn :global(svg) {
-    width: 18px;
-    height: 18px;
   }
 
   .dropdown-container {
@@ -482,10 +478,6 @@
     color: var(--text-secondary);
   }
 
-  .capacity :global(svg) {
-    opacity: 0.7;
-  }
-
   .reset-filter-btn {
     margin-top: 12px;
     padding: 8px 16px;
@@ -512,15 +504,10 @@
     .panel-actions {
       gap: 2px;
     }
-    
+
     .panel-action-btn {
       width: 32px;
       height: 32px;
-    }
-    
-    .panel-action-btn :global(svg) {
-      width: 16px;
-      height: 16px;
     }
   }
 </style>

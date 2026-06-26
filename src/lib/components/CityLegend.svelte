@@ -10,21 +10,21 @@
       filter: 'free' as const,
       label: 'Miễn phí',
       color: '#10b981',
-      bgColor: '#d1fae5',
+      bgColor: '#ecfdf5',
       icon: '✓',
     },
     {
       filter: 'paid' as const,
       label: 'Trả phí',
       color: '#f59e0b',
-      bgColor: '#fef3c7',
+      bgColor: '#fffbeb',
       icon: 'P',
     },
     {
       filter: 'weekend' as const,
       label: 'Cuối tuần',
-      color: '#8b5cf6',
-      bgColor: '#ede9fe',
+      color: '#a78bfa',
+      bgColor: '#f5f3ff',
       icon: 'W',
     },
   ];
@@ -80,9 +80,10 @@
     z-index: 150;
     background: var(--bg);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-lg);
     overflow: hidden;
-    transition: all 0.2s var(--ease-out);
+    transition: all 0.3s var(--ease-spring);
+    border: 1.5px solid var(--border-light);
   }
 
   .legend-toggle {
@@ -95,13 +96,13 @@
     color: var(--text-secondary);
     cursor: pointer;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 700;
     width: 100%;
     transition: color 0.15s ease;
   }
 
   .legend-toggle:hover {
-    color: var(--text-primary);
+    color: var(--accent);
   }
 
   .legend.expanded .legend-toggle {
@@ -114,7 +115,7 @@
     flex-direction: column;
     gap: 2px;
     padding: 6px 6px 6px;
-    animation: slideUp 0.2s ease-out;
+    animation: slideUp 0.25s var(--ease-spring);
   }
 
   .legend-item {
@@ -128,30 +129,32 @@
     cursor: pointer;
     color: var(--text-primary);
     font-size: 13px;
-    transition: background 0.1s ease;
+    font-weight: 600;
+    transition: all 0.15s var(--ease-spring);
     text-align: left;
     width: 100%;
   }
 
   .legend-item:hover {
     background: var(--bg-secondary);
+    transform: translateX(2px);
   }
 
   .legend-marker {
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     border: 2px solid;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 700;
+    font-weight: 800;
     font-size: 11px;
     flex-shrink: 0;
   }
 
   .legend-label {
-    font-weight: 500;
+    font-weight: 600;
   }
 
   @keyframes slideUp {

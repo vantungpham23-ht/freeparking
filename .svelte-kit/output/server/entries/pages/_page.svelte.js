@@ -1,11 +1,6 @@
-import { a5 as ssr_context, a6 as bind_props, a7 as ensure_array_like, a8 as attr_style, a3 as derived, a9 as stringify, aa as attr_class, ab as attr, e as escape_html, ac as store_get, ad as unsubscribe_stores, a4 as head } from "../../chunks/index.js";
+import { a5 as ssr_context, a6 as bind_props, a7 as ensure_array_like, a8 as attr_style, a3 as derived, a9 as stringify, aa as attr, ab as attr_class, ac as clsx, e as escape_html, ad as store_get, ae as unsubscribe_stores, a4 as head } from "../../chunks/index.js";
 import "clsx";
 import { w as writable } from "../../chunks/index2.js";
-function html(value) {
-  var html2 = String(value ?? "");
-  var open = "<!---->";
-  return open + html2 + "<!---->";
-}
 function onDestroy(fn) {
   /** @type {SSRContext} */
   ssr_context.r.on_destroy(fn);
@@ -21,9 +16,12 @@ function Map_1($$renderer, $$props) {
       parkings,
       selectedParking,
       userLocation,
+      destination,
+      pickerMode,
       onSelectParking,
       onMapMove,
-      onUserLocationChange
+      onUserLocationChange,
+      onMapClick
     } = $$props;
     onDestroy(() => {
       return;
@@ -43,46 +41,6 @@ function Map_1($$renderer, $$props) {
     bind_props($$props, { flyTo, centerOnUser, refreshMarkers });
   });
 }
-const icons = {
-  parking: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="3" y="3" width="18" height="18" rx="3"/>
-    <path d="M9 17V7h4a3 3 0 0 1 0 6h-2a2 2 0 0 0 0 4h2"/>
-  </svg>`,
-  location: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="12" cy="12" r="3"/>
-    <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
-  </svg>`,
-  navigate: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-    <polygon points="3 11 22 2 13 21 11 13 3 11"/>
-  </svg>`,
-  search: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="11" cy="11" r="8"/>
-    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-  </svg>`,
-  menu: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-    <line x1="3" y1="12" x2="21" y2="12"/>
-    <line x1="3" y1="6" x2="21" y2="6"/>
-    <line x1="3" y1="18" x2="21" y2="18"/>
-  </svg>`,
-  filter: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
-  </svg>`,
-  car: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"/>
-    <circle cx="6.5" cy="16.5" r="2.5"/>
-    <circle cx="16.5" cy="16.5" r="2.5"/>
-  </svg>`
-};
-const ParkingIcon = icons.parking;
-const LocationIcon = icons.location;
-const NavigateIcon = icons.navigate;
-const SearchIcon = icons.search;
-const MenuIcon = icons.menu;
-const FilterIcon = icons.filter;
-const CarIcon = icons.car;
-const SortIcon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M3 6h18M6 12h12M9 18h6"/>
-</svg>`;
 function SkeletonCard($$renderer, $$props) {
   let { count = 4 } = $$props;
   const items = derived(() => Array.from({ length: count }));
@@ -93,6 +51,68 @@ function SkeletonCard($$renderer, $$props) {
     $$renderer.push(`<div class="skeleton-card svelte-lx25l7"${attr_style(`animation-delay: ${stringify(i * 80)}ms`)}><div class="skeleton-status shimmer svelte-lx25l7"></div> <div class="skeleton-info svelte-lx25l7"><div class="skeleton-name shimmer svelte-lx25l7"></div> <div class="skeleton-meta shimmer svelte-lx25l7"></div></div> <div class="skeleton-distance shimmer svelte-lx25l7"></div> <div class="skeleton-nav shimmer svelte-lx25l7"></div></div>`);
   }
   $$renderer.push(`<!--]--></div>`);
+}
+function Icon($$renderer, $$props) {
+  let { name, size = 20, strokeWidth = 1.8, class: className = "" } = $$props;
+  $$renderer.push(`<svg${attr("width", size)}${attr("height", size)} viewBox="0 0 24 24" fill="none" stroke="currentColor"${attr("stroke-width", strokeWidth)} stroke-linecap="round" stroke-linejoin="round"${attr_class(clsx(className))} aria-hidden="true">`);
+  if (name === "parking") {
+    $$renderer.push("<!--[0-->");
+    $$renderer.push(`<rect x="3" y="3" width="18" height="18" rx="3"></rect><path d="M9 17V7h4a3 3 0 0 1 0 6h-2a2 2 0 0 0 0 4h2"></path>`);
+  } else if (name === "location") {
+    $$renderer.push("<!--[1-->");
+    $$renderer.push(`<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle>`);
+  } else if (name === "navigate") {
+    $$renderer.push("<!--[2-->");
+    $$renderer.push(`<polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>`);
+  } else if (name === "close") {
+    $$renderer.push("<!--[3-->");
+    $$renderer.push(`<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>`);
+  } else if (name === "search") {
+    $$renderer.push("<!--[4-->");
+    $$renderer.push(`<circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>`);
+  } else if (name === "list") {
+    $$renderer.push("<!--[5-->");
+    $$renderer.push(`<line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line>`);
+  } else if (name === "check") {
+    $$renderer.push("<!--[6-->");
+    $$renderer.push(`<polyline points="20 6 9 17 4 12"></polyline>`);
+  } else if (name === "menu") {
+    $$renderer.push("<!--[7-->");
+    $$renderer.push(`<line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>`);
+  } else if (name === "filter") {
+    $$renderer.push("<!--[8-->");
+    $$renderer.push(`<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>`);
+  } else if (name === "sort") {
+    $$renderer.push("<!--[9-->");
+    $$renderer.push(`<path d="M3 6h18M6 12h12M9 18h6"></path>`);
+  } else if (name === "info") {
+    $$renderer.push("<!--[10-->");
+    $$renderer.push(`<circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>`);
+  } else if (name === "help") {
+    $$renderer.push("<!--[11-->");
+    $$renderer.push(`<circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line>`);
+  } else if (name === "arrow-right") {
+    $$renderer.push("<!--[12-->");
+    $$renderer.push(`<line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline>`);
+  } else if (name === "car") {
+    $$renderer.push("<!--[13-->");
+    $$renderer.push(`<path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"></path><circle cx="6.5" cy="16.5" r="2.5"></circle><circle cx="16.5" cy="16.5" r="2.5"></circle>`);
+  } else if (name === "pin") {
+    $$renderer.push("<!--[14-->");
+    $$renderer.push(`<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle>`);
+  } else if (name === "star") {
+    $$renderer.push("<!--[15-->");
+    $$renderer.push(`<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>`);
+  } else if (name === "city") {
+    $$renderer.push("<!--[16-->");
+    $$renderer.push(`<path d="M3 21h18"></path><path d="M5 21V7l8-4v18"></path><path d="M19 21V11l-6-4"></path>`);
+  } else if (name === "sparkle") {
+    $$renderer.push("<!--[17-->");
+    $$renderer.push(`<path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z"></path>`);
+  } else {
+    $$renderer.push("<!--[-1-->");
+  }
+  $$renderer.push(`<!--]--></svg>`);
 }
 function ParkingPanel($$renderer, $$props) {
   $$renderer.component(($$renderer2) => {
@@ -160,11 +180,17 @@ function ParkingPanel($$renderer, $$props) {
       return result;
     }
     let filteredParkings = derived(getSortedAndFilteredParkings);
-    $$renderer2.push(`<div${attr_class("parking-panel", void 0, { "open": isOpen })} role="dialog" aria-label="Danh sách bãi đỗ xe"${attr("aria-hidden", !isOpen)}><div class="panel-handle" role="button" tabindex="0" aria-label="Đóng panel"></div> <div class="panel-header"><div class="panel-title">${html(ParkingIcon)} <span>Bãi đỗ xe</span> <span class="panel-count">${escape_html(filteredParkings().length)}</span></div> <div class="panel-actions svelte-122re7a"><div class="dropdown-container svelte-122re7a"><button${attr_class("panel-action-btn svelte-122re7a", void 0, { "active": filterBy !== "all" })} aria-label="Lọc bãi đỗ"${attr("aria-expanded", showFilterMenu)}>${html(FilterIcon)}</button> `);
+    $$renderer2.push(`<div${attr_class("parking-panel", void 0, { "open": isOpen })} role="dialog" aria-label="Danh sách bãi đỗ xe"${attr("aria-hidden", !isOpen)}><div class="panel-handle" role="button" tabindex="0" aria-label="Đóng panel"></div> <div class="panel-header"><div class="panel-title">`);
+    Icon($$renderer2, { name: "parking", size: 18 });
+    $$renderer2.push(`<!----> <span>Bãi đỗ xe</span> <span class="panel-count">${escape_html(filteredParkings().length)}</span></div> <div class="panel-actions svelte-122re7a"><div class="dropdown-container svelte-122re7a"><button${attr_class("panel-action-btn svelte-122re7a", void 0, { "active": filterBy !== "all" })} aria-label="Lọc bãi đỗ"${attr("aria-expanded", showFilterMenu)}>`);
+    Icon($$renderer2, { name: "filter", size: 18 });
+    $$renderer2.push(`<!----></button> `);
     {
       $$renderer2.push("<!--[-1-->");
     }
-    $$renderer2.push(`<!--]--></div> <div class="dropdown-container svelte-122re7a"><button class="panel-action-btn svelte-122re7a" aria-label="Sắp xếp"${attr("aria-expanded", showSortMenu)}>${html(SortIcon)}</button> `);
+    $$renderer2.push(`<!--]--></div> <div class="dropdown-container svelte-122re7a"><button class="panel-action-btn svelte-122re7a" aria-label="Sắp xếp"${attr("aria-expanded", showSortMenu)}>`);
+    Icon($$renderer2, { name: "sort", size: 18 });
+    $$renderer2.push(`<!----></button> `);
     {
       $$renderer2.push("<!--[-1-->");
     }
@@ -174,10 +200,14 @@ function ParkingPanel($$renderer, $$props) {
       SkeletonCard($$renderer2, { count: 4 });
     } else if (parkings.length === 0) {
       $$renderer2.push("<!--[1-->");
-      $$renderer2.push(`<div class="empty-state"><div class="empty-icon">${html(CarIcon)}</div> <p class="empty-title">Không có bãi đỗ</p> <p class="empty-text">Di chuyển bản đồ để tìm bãi đỗ xe</p></div>`);
+      $$renderer2.push(`<div class="empty-state"><div class="empty-icon">`);
+      Icon($$renderer2, { name: "car", size: 36 });
+      $$renderer2.push(`<!----></div> <p class="empty-title">Không có bãi đỗ</p> <p class="empty-text">Di chuyển bản đồ để tìm bãi đỗ xe</p></div>`);
     } else if (filteredParkings().length === 0) {
       $$renderer2.push("<!--[2-->");
-      $$renderer2.push(`<div class="empty-state"><div class="empty-icon">${html(FilterIcon)}</div> <p class="empty-title">Không tìm thấy</p> <p class="empty-text">Thử thay đổi bộ lọc</p> <button class="reset-filter-btn svelte-122re7a">Xóa bộ lọc</button></div>`);
+      $$renderer2.push(`<div class="empty-state"><div class="empty-icon">`);
+      Icon($$renderer2, { name: "filter", size: 18 });
+      $$renderer2.push(`<!----></div> <p class="empty-title">Không tìm thấy</p> <p class="empty-text">Thử thay đổi bộ lọc</p> <button class="reset-filter-btn svelte-122re7a">Xóa bộ lọc</button></div>`);
     } else {
       $$renderer2.push("<!--[-1-->");
       $$renderer2.push(`<!--[-->`);
@@ -233,7 +263,9 @@ function ParkingPanel($$renderer, $$props) {
         } else {
           $$renderer2.push("<!--[-1-->");
         }
-        $$renderer2.push(`<!--]--> <button class="parking-nav-btn" title="Chỉ đường"${attr("aria-label", `Chỉ đường đến ${stringify(parking.name)}`)}>${html(NavigateIcon)}</button></div>`);
+        $$renderer2.push(`<!--]--> <button class="parking-nav-btn" title="Chỉ đường"${attr("aria-label", `Chỉ đường đến ${stringify(parking.name)}`)}>`);
+        Icon($$renderer2, { name: "navigate", size: 18 });
+        $$renderer2.push(`<!----></button></div>`);
       }
       $$renderer2.push(`<!--]-->`);
     }
@@ -263,7 +295,9 @@ function Header($$renderer, $$props) {
       const value = parseFloat(e.target.value);
       radiusKm = value;
     }
-    $$renderer2.push(`<header class="header"><a href="/" class="header-logo" aria-label="T-Map - Trang chủ">${html(ParkingIcon)} <span>T-map</span></a> <div class="city-selector svelte-1elxaub"><button${attr_class("city-btn svelte-1elxaub", void 0, { "active": currentCity === "kosice" })} type="button">Košice `);
+    $$renderer2.push(`<header class="header"><a href="/" class="header-logo" aria-label="T-Map - Trang chủ">`);
+    Icon($$renderer2, { name: "parking", size: 22 });
+    $$renderer2.push(`<!----> <span>T-map</span></a> <div class="city-selector svelte-1elxaub"><button${attr_class("city-btn svelte-1elxaub", void 0, { "active": currentCity === "kosice" })} type="button">Košice `);
     if (cityCounts.kosice !== void 0) {
       $$renderer2.push("<!--[0-->");
       $$renderer2.push(`<span class="city-count svelte-1elxaub">${escape_html(cityCounts.kosice)}</span>`);
@@ -277,7 +311,9 @@ function Header($$renderer, $$props) {
     } else {
       $$renderer2.push("<!--[-1-->");
     }
-    $$renderer2.push(`<!--]--></button></div> <div class="search-container svelte-1elxaub"><div${attr_class("search-box svelte-1elxaub", void 0, { "searching": isSearching })}><span class="search-icon svelte-1elxaub">${html(SearchIcon)}</span> <div class="input-wrapper svelte-1elxaub"><input type="text" class="search-input svelte-1elxaub" placeholder="Tìm kiếm địa điểm (VD: Aupark)..." aria-label="Tìm kiếm địa điểm"${attr("value", searchQuery)} role="combobox"${attr("aria-expanded", showSuggestions)} aria-autocomplete="list" aria-controls="search-suggestions" autocomplete="off"/> `);
+    $$renderer2.push(`<!--]--></button></div> <div class="search-container svelte-1elxaub"><div${attr_class("search-box svelte-1elxaub", void 0, { "searching": isSearching })}><span class="search-icon svelte-1elxaub">`);
+    Icon($$renderer2, { name: "search", size: 18 });
+    $$renderer2.push(`<!----></span> <div class="input-wrapper svelte-1elxaub"><input type="text" class="search-input svelte-1elxaub" placeholder="Tìm kiếm địa điểm (VD: Aupark)..." aria-label="Tìm kiếm địa điểm"${attr("value", searchQuery)} role="combobox"${attr("aria-expanded", showSuggestions)} aria-autocomplete="list" aria-controls="search-suggestions" autocomplete="off"/> `);
     {
       $$renderer2.push("<!--[-1-->");
     }
@@ -314,11 +350,15 @@ function Header($$renderer, $$props) {
     $$renderer2.push(`<!--]--></div> <div class="header-actions">`);
     if (onShowHelp) {
       $$renderer2.push("<!--[0-->");
-      $$renderer2.push(`<button class="icon-btn" aria-label="Xem hướng dẫn" title="Hướng dẫn" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></button>`);
+      $$renderer2.push(`<button class="icon-btn" aria-label="Xem hướng dẫn" title="Hướng dẫn" type="button">`);
+      Icon($$renderer2, { name: "help", size: 20 });
+      $$renderer2.push(`<!----></button>`);
     } else {
       $$renderer2.push("<!--[-1-->");
     }
-    $$renderer2.push(`<!--]--> <button${attr_class("icon-btn", void 0, { "active": isListOpen })}${attr("aria-label", isListOpen ? "Đóng danh sách" : "Mở danh sách bãi đỗ")}${attr("title", isListOpen ? "Đóng danh sách" : "Mở danh sách")} type="button">${html(MenuIcon)}</button></div></header>`);
+    $$renderer2.push(`<!--]--> <button${attr_class("icon-btn", void 0, { "active": isListOpen })}${attr("aria-label", isListOpen ? "Đóng danh sách" : "Mở danh sách bãi đỗ")}${attr("title", isListOpen ? "Đóng danh sách" : "Mở danh sách")} type="button">`);
+    Icon($$renderer2, { name: "menu", size: 20 });
+    $$renderer2.push(`<!----></button></div></header>`);
   });
 }
 function WelcomeModal($$renderer, $$props) {
@@ -327,50 +367,53 @@ function WelcomeModal($$renderer, $$props) {
     let currentStep = 0;
     const steps = [
       {
-        icon: "pin",
-        iconColor: "#2563eb",
-        iconBg: "#dbeafe",
-        title: "Chào mừng đến với T-Map",
-        description: "Ứng dụng giúp bạn tìm kiếm và định vị bãi đỗ xe nhanh chóng tại Košice và Vinh."
+        icon: "sparkle",
+        iconColor: "#6366f1",
+        iconBg: "linear-gradient(135deg, #eef2ff 0%, #fce7f3 100%)",
+        title: "Chào bạn! 👋",
+        description: "T-Map giúp bạn tìm bãi đỗ xe gần nhất một cách nhanh chóng và dễ thương."
       },
       {
         icon: "city",
         iconColor: "#10b981",
-        iconBg: "#d1fae5",
-        title: "Chọn thành phố của bạn",
-        description: "Chuyển đổi giữa Košice (Slovakia) và Vinh (Việt Nam) bằng nút ở góc trên bên trái."
+        iconBg: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)",
+        title: "Chọn thành phố 🏙️",
+        description: "Chuyển đổi giữa Košice (Slovakia) và Vinh (Việt Nam) chỉ với một cú chạm."
+      },
+      {
+        icon: "pin",
+        iconColor: "#ec4899",
+        iconBg: "linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%)",
+        title: "Chọn điểm đến 📍",
+        description: 'Nhấn nút "Đi đâu?" rồi chạm vào bất kỳ đâu trên bản đồ để xem các bãi đỗ gần đó.'
       },
       {
         icon: "filter",
         iconColor: "#f59e0b",
-        iconBg: "#fef3c7",
-        title: "Lọc bãi đỗ theo nhu cầu",
-        description: "Lọc theo miễn phí, trả phí hoặc cuối tuần miễn phí. Sắp xếp theo khoảng cách hoặc sức chứa."
-      },
-      {
-        icon: "navigate",
-        iconColor: "#8b5cf6",
-        iconBg: "#ede9fe",
-        title: "Chỉ đường dễ dàng",
-        description: "Nhấn nút định vị để mở Google Maps/Apple Maps và dẫn đường đến bãi đỗ gần nhất."
+        iconBg: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",
+        title: "Lọc thông minh ✨",
+        description: "Tìm bãi miễn phí, trả phí hoặc cuối tuần miễn phí. Sắp xếp theo khoảng cách hoặc sức chứa."
       }
     ];
     const step = derived(() => steps[currentStep]);
     if (isOpen) {
       $$renderer2.push("<!--[0-->");
-      $$renderer2.push(`<div class="modal-backdrop svelte-1tjvg83" role="presentation"><div class="modal-content svelte-1tjvg83" role="dialog" aria-modal="true" aria-labelledby="welcome-title"><button class="close-btn svelte-1tjvg83" aria-label="Đóng hướng dẫn" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button> <div class="modal-icon svelte-1tjvg83"${attr_style(`background: ${stringify(step().iconBg)}; color: ${stringify(step().iconColor)}`)}>`);
-      if (step().icon === "pin") {
+      $$renderer2.push(`<div class="modal-backdrop svelte-1tjvg83" role="presentation"><div class="modal-content svelte-1tjvg83" role="dialog" aria-modal="true" aria-labelledby="welcome-title"><button class="close-btn svelte-1tjvg83" aria-label="Đóng hướng dẫn" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="svelte-1tjvg83"><line x1="18" y1="6" x2="6" y2="18" class="svelte-1tjvg83"></line><line x1="6" y1="6" x2="18" y2="18" class="svelte-1tjvg83"></line></svg></button> <div class="modal-icon svelte-1tjvg83"${attr_style(`background: ${stringify(step().iconBg)}; color: ${stringify(step().iconColor)}`)}>`);
+      if (step().icon === "sparkle") {
         $$renderer2.push("<!--[0-->");
-        $$renderer2.push(`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`);
+        $$renderer2.push(`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svelte-1tjvg83"><path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z" class="svelte-1tjvg83"></path></svg>`);
       } else if (step().icon === "city") {
         $$renderer2.push("<!--[1-->");
-        $$renderer2.push(`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"></path><path d="M5 21V7l8-4v18"></path><path d="M19 21V11l-6-4"></path></svg>`);
-      } else if (step().icon === "filter") {
+        $$renderer2.push(`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svelte-1tjvg83"><path d="M3 21h18" class="svelte-1tjvg83"></path><path d="M5 21V7l8-4v18" class="svelte-1tjvg83"></path><path d="M19 21V11l-6-4" class="svelte-1tjvg83"></path><circle cx="9" cy="10" r="1" fill="currentColor" class="svelte-1tjvg83"></circle><circle cx="9" cy="14" r="1" fill="currentColor" class="svelte-1tjvg83"></circle><circle cx="16" cy="14" r="1" fill="currentColor" class="svelte-1tjvg83"></circle></svg>`);
+      } else if (step().icon === "pin") {
         $$renderer2.push("<!--[2-->");
-        $$renderer2.push(`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>`);
-      } else if (step().icon === "navigate") {
+        $$renderer2.push(`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="svelte-1tjvg83"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" class="svelte-1tjvg83"></path><circle cx="12" cy="10" r="3" class="svelte-1tjvg83"></circle></svg>`);
+      } else if (step().icon === "filter") {
         $$renderer2.push("<!--[3-->");
-        $$renderer2.push(`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>`);
+        $$renderer2.push(`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svelte-1tjvg83"><path d="M9 11l3 3L22 4" class="svelte-1tjvg83"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" class="svelte-1tjvg83"></path></svg>`);
+      } else if (step().icon === "navigate") {
+        $$renderer2.push("<!--[4-->");
+        $$renderer2.push(`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svelte-1tjvg83"><polygon points="3 11 22 2 13 21 11 13 3 11" class="svelte-1tjvg83"></polygon></svg>`);
       } else {
         $$renderer2.push("<!--[-1-->");
       }
@@ -384,7 +427,7 @@ function WelcomeModal($$renderer, $$props) {
       {
         $$renderer2.push("<!--[-1-->");
       }
-      $$renderer2.push(`<!--]--> <button class="btn-primary svelte-1tjvg83" type="button">${escape_html(currentStep < steps.length - 1 ? "Tiếp theo" : "Bắt đầu")} <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></button></div></div></div>`);
+      $$renderer2.push(`<!--]--> <button class="btn-primary svelte-1tjvg83" type="button">${escape_html(currentStep < steps.length - 1 ? "Tiếp theo" : "Bắt đầu")} <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="svelte-1tjvg83"><line x1="5" y1="12" x2="19" y2="12" class="svelte-1tjvg83"></line><polyline points="12 5 19 12 12 19" class="svelte-1tjvg83"></polyline></svg></button></div></div></div>`);
     } else {
       $$renderer2.push("<!--[-1-->");
     }
@@ -424,16 +467,29 @@ function LocationButton($$renderer, $$props) {
       $$renderer2.push(`<div class="spinner svelte-1tde8mt"></div> <div class="pulse-ring svelte-1tde8mt"></div>`);
     } else if (state() === "granted") {
       $$renderer2.push("<!--[1-->");
-      $$renderer2.push(`<span class="icon-active svelte-1tde8mt">${html(LocationIcon)}</span>`);
+      $$renderer2.push(`<span class="icon-active svelte-1tde8mt">`);
+      Icon($$renderer2, { name: "location", size: 22 });
+      $$renderer2.push(`<!----></span>`);
     } else if (state() === "denied") {
       $$renderer2.push("<!--[2-->");
-      $$renderer2.push(`<span class="icon-denied svelte-1tde8mt"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svelte-1tde8mt"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" class="svelte-1tde8mt"></path><circle cx="12" cy="10" r="3" class="svelte-1tde8mt"></circle><line x1="3" y1="3" x2="21" y2="21" class="svelte-1tde8mt"></line></svg></span>`);
+      $$renderer2.push(`<span class="icon-denied svelte-1tde8mt"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svelte-1tde8mt"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" class="svelte-1tde8mt"></path><circle cx="12" cy="10" r="3" class="svelte-1tde8mt"></circle><line x1="3" y1="3" x2="21" y2="21" class="svelte-1tde8mt"></line></svg></span>`);
     } else {
       $$renderer2.push("<!--[-1-->");
-      $$renderer2.push(`${html(LocationIcon)}`);
+      Icon($$renderer2, { name: "location", size: 22 });
     }
     $$renderer2.push(`<!--]--></button></div>`);
     if ($$store_subs) unsubscribe_stores($$store_subs);
+  });
+}
+function DestinationPicker($$renderer, $$props) {
+  $$renderer.component(($$renderer2) => {
+    {
+      $$renderer2.push("<!--[-1-->");
+      $$renderer2.push(`<button class="destination-fab svelte-dhrmjy" aria-label="Chọn điểm đến trên bản đồ" title="Chọn điểm đến" type="button"><span class="fab-icon svelte-dhrmjy">`);
+      Icon($$renderer2, { name: "pin", size: 20 });
+      $$renderer2.push(`<!----></span> <span class="fab-text svelte-dhrmjy">Đi đâu?</span></button>`);
+    }
+    $$renderer2.push(`<!--]-->`);
   });
 }
 const vinhParkings = [
@@ -980,6 +1036,8 @@ function _page($$renderer, $$props) {
     let retryCount = 0;
     let currentCityId = "kosice";
     let showWelcome = false;
+    let destination = null;
+    let pickerMode = false;
     const cityCounts = getParkingCounts();
     const OVERPASS_ENDPOINTS = [
       "https://overpass-api.de/api/interpreter",
@@ -1025,6 +1083,9 @@ function _page($$renderer, $$props) {
     }
     function getFilteredParkings() {
       return parkings;
+    }
+    async function handleMapClick(lat, lng) {
+      return;
     }
     async function fetchParkings(bounds, immediate = false) {
       const minChange = 5e-3;
@@ -1136,10 +1197,15 @@ out center;`;
       parkings: getFilteredParkings(),
       selectedParking: selectedParking(),
       userLocation,
+      destination,
+      pickerMode,
       onSelectParking: handleSelectParking,
       onMapMove: handleMapMove,
-      onUserLocationChange: handleUserLocationChange
+      onUserLocationChange: handleUserLocationChange,
+      onMapClick: handleMapClick
     });
+    $$renderer2.push(`<!----> `);
+    DestinationPicker($$renderer2);
     $$renderer2.push(`<!----> `);
     CityLegend($$renderer2);
     $$renderer2.push(`<!----> `);

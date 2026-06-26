@@ -6,9 +6,10 @@
   import WelcomeModal from '$lib/components/WelcomeModal.svelte';
   import CityLegend from '$lib/components/CityLegend.svelte';
   import LocationButton from '$lib/components/LocationButton.svelte';
-import type { Parking } from '$lib/types';
-import { cities, getParkingCounts, getParkingForCity } from '$lib/data';
-import { preferences } from '$lib/stores/preferences';
+  import DestinationPicker from '$lib/components/DestinationPicker.svelte';
+  import type { Parking } from '$lib/types';
+  import { cities, getParkingCounts, getParkingForCity } from '$lib/data';
+  import { preferences } from '$lib/stores/preferences';
 
   let parkings = $state<Parking[]>([]);
   let selectedParkingId = $state<string | null>(null);
@@ -27,6 +28,8 @@ import { preferences } from '$lib/stores/preferences';
   let retryCount = $state(0);
   let currentCityId = $state<string>('kosice');
   let showWelcome = $state(false);
+  let destination = $state<{ lat: number; lng: number; name: string } | null>(null);
+  let pickerMode = $state(false);
 
   const cityCounts = getParkingCounts();
 
@@ -147,13 +150,17 @@ import { preferences } from '$lib/stores/preferences';
   }
 
   function getFilteredParkings(): Parking[] {
-    if (!searchCenter) return parkings;
+    // Filter by destination if set
+    const center = destination || searchCenter;
+    if (!center) return parkings;
+
+    const radius = destination ? 2 : searchRadius; // 2km radius for destination
     return parkings.filter(p => {
-      const distance = calculateDistance(searchCenter!.lat, searchCenter!.lng, p.lat, p.lng);
-      return distance <= searchRadius;
+      const distance = calculateDistance(center.lat, center.lng, p.lat, p.lng);
+      return distance <= radius;
     }).map(p => ({
       ...p,
-      distance: calculateDistance(searchCenter!.lat, searchCenter!.lng, p.lat, p.lng)
+      distance: calculateDistance(center.lat, center.lng, p.lat, p.lng)
     })).sort((a, b) => (a.distance || 0) - (b.distance || 0));
   }
 
@@ -184,6 +191,59 @@ import { preferences } from '$lib/stores/preferences';
   }
 
   function handleLegendFilter(filter: 'free' | 'paid' | 'weekend') {
+    showPanel = true;
+  }
+
+  function activatePicker() {
+    pickerMode = true;
+    showPanel = false;
+  }
+
+  function cancelPicker() {
+    pickerMode = false;
+  }
+
+  function clearDestination() {
+    destination = null;
+    pickerMode = false;
+  }
+
+  async function handleMapClick(lat: number, lng: number) {
+    if (!pickerMode) return;
+
+    pickerMode = false;
+
+    // Reverse geocode to get name
+    let name = 'Điểm đã chọn';
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18`
+      );
+      const result = await response.json();
+      if (result.display_name) {
+        name = result.display_name.split(',').slice(0, 2).join(',').trim();
+      }
+    } catch {
+      // Use default name
+    }
+
+    destination = { lat, lng, name };
+
+    // Fetch parkings near destination
+    const latRange = 0.02;
+    const lngRange = 0.03;
+    currentBounds = {
+      south: lat - latRange,
+      west: lng - lngRange,
+      north: lat + latRange,
+      east: lng + lngRange,
+    };
+
+    if (mapComponent) {
+      mapComponent.flyTo(lat, lng, 16);
+    }
+
+    // Auto-open panel to show nearby
     showPanel = true;
   }
 
@@ -382,9 +442,21 @@ out center;`;
       parkings={getFilteredParkings()}
       {selectedParking}
       {userLocation}
+      {destination}
+      {pickerMode}
       onSelectParking={handleSelectParking}
       onMapMove={handleMapMove}
       onUserLocationChange={handleUserLocationChange}
+      onMapClick={handleMapClick}
+    />
+
+    <!-- Destination Picker -->
+    <DestinationPicker
+      isActive={pickerMode}
+      {destination}
+      onActivate={activatePicker}
+      onCancel={cancelPicker}
+      onConfirm={() => {}}
     />
 
     <!-- City Legend -->
@@ -442,27 +514,28 @@ out center;`;
     bottom: 100px;
     left: 50%;
     transform: translateX(-50%);
-    background: var(--error);
+    background: var(--text-primary);
     color: white;
     padding: 12px 16px;
-    border-radius: var(--radius);
+    border-radius: var(--radius-full);
     display: flex;
     align-items: center;
     gap: 12px;
     box-shadow: var(--shadow-lg);
     z-index: 500;
-    animation: slideUp 0.3s ease-out;
+    animation: slideUp 0.3s var(--ease-spring);
     font-size: 13px;
+    font-weight: 600;
   }
 
   .retry-btn {
     background: rgba(255, 255, 255, 0.2);
     border: none;
     color: white;
-    padding: 6px 12px;
-    border-radius: var(--radius-sm);
+    padding: 6px 14px;
+    border-radius: var(--radius-full);
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
     transition: background 0.15s ease;
   }

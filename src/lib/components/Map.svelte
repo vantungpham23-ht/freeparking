@@ -4,22 +4,42 @@
   import type { Parking } from '$lib/types';
   import { setLocationState } from '$lib/stores/location';
 
+  interface Destination {
+    lat: number;
+    lng: number;
+    name: string;
+  }
+
   interface Props {
     parkings: Parking[];
     selectedParking: Parking | null;
     userLocation: { lat: number; lng: number } | null;
+    destination: Destination | null;
+    pickerMode: boolean;
     onSelectParking: (p: Parking | null) => void;
     onMapMove: (center: [number, number], zoom: number) => void;
     onUserLocationChange: (location: { lat: number; lng: number } | null) => void;
+    onMapClick?: (lat: number, lng: number) => void;
   }
 
-  let { parkings, selectedParking, userLocation, onSelectParking, onMapMove, onUserLocationChange }: Props = $props();
+  let {
+    parkings,
+    selectedParking,
+    userLocation,
+    destination,
+    pickerMode,
+    onSelectParking,
+    onMapMove,
+    onUserLocationChange,
+    onMapClick
+  }: Props = $props();
 
   let mapContainer: HTMLDivElement | undefined = $state();
   let map: any = $state(null);
   let L: any = $state(null);
   let markersLayer: any = $state(null);
   let userMarkerLayer: any = $state(null);
+  let destinationLayer: any = $state(null);
   let watchId: number | null = $state(null);
   let mapReady = $state(false);
   let mapLoading = $state(true);
@@ -40,18 +60,18 @@
     let color: string;
     let bgColor: string;
     let label: string;
-    
+
     if (isWeekendFree) {
-      color = '#8b5cf6';
-      bgColor = '#ede9fe';
+      color = '#a78bfa';
+      bgColor = '#f5f3ff';
       label = 'W';
     } else if (isFree) {
       color = '#10b981';
-      bgColor = '#d1fae5';
+      bgColor = '#ecfdf5';
       label = '✓';
     } else {
       color = '#f59e0b';
-      bgColor = '#fef3c7';
+      bgColor = '#fffbeb';
       label = 'P';
     }
 
@@ -89,28 +109,29 @@
       return iconCache.get('user');
     }
 
-    const size = 20;
+    const size = 22;
     const icon = L.divIcon({
       html: `
         <div style="position: relative; width: ${size}px; height: ${size}px;">
           <div style="
             position: absolute;
             inset: 0;
-            background: #2563eb;
+            background: #6366f1;
             border-radius: 50%;
             animation: ripple 2s ease-out infinite;
+            opacity: 0.4;
           "></div>
           <div style="
             position: absolute;
             inset: 4px;
             background: white;
             border-radius: 50%;
-            box-shadow: 0 2px 8px rgba(37,99,235,0.4);
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
           "></div>
           <div style="
             position: absolute;
             inset: 8px;
-            background: #2563eb;
+            background: #6366f1;
             border-radius: 50%;
           "></div>
         </div>
@@ -158,15 +179,15 @@
     let statusText: string;
     
     if (isWeekendFree) {
-      statusBg = '#ede9fe';
-      statusColor = '#8b5cf6';
+      statusBg = '#f5f3ff';
+      statusColor = '#a78bfa';
       statusText = 'Cuối tuần miễn phí';
     } else if (isFree) {
-      statusBg = '#d1fae5';
+      statusBg = '#ecfdf5';
       statusColor = '#10b981';
       statusText = 'Miễn phí';
     } else {
-      statusBg = '#fef3c7';
+      statusBg = '#fffbeb';
       statusColor = '#f59e0b';
       statusText = 'Trả phí';
     }
@@ -174,31 +195,31 @@
     const navHandler = `window.__openNav(${parking.lat}, ${parking.lng}, '${parking.name.replace(/'/g, "\\'")}')`;
 
     return `
-      <div style="padding: 16px; font-family: 'Inter', sans-serif; min-width: 220px;">
-        <h3 style="font-weight: 600; font-size: 15px; color: #0f172a; margin-bottom: 10px; line-height: 1.3;">
+      <div style="padding: 16px; font-family: 'Plus Jakarta Sans', sans-serif; min-width: 220px;">
+        <h3 style="font-weight: 700; font-size: 15px; color: #1e1b4b; margin-bottom: 10px; line-height: 1.3;">
           ${parking.name}
         </h3>
-        
+
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
           <span style="
             display: inline-flex;
             padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 600;
             background: ${statusBg};
             color: ${statusColor};
           ">${statusText}</span>
           ${parking.capacity ? `<span style="font-size: 12px; color: #64748b;">${parking.capacity} chỗ</span>` : ''}
         </div>
-        
+
         ${parking.feePerHour ? `<p style="font-size: 12px; color: #64748b; margin-bottom: 12px;">€${parking.feePerHour}/giờ</p>` : ''}
-        
-        <button 
+
+        <button
           onclick="${navHandler}"
-          onmouseover="this.style.background='#1d4ed8'"
-          onmouseout="this.style.background='#2563eb'"
-          style="width:100%;padding:10px 16px;background:#2563eb;color:white;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background 0.15s ease;">
+          onmouseover="this.style.background='#4f46e5'"
+          onmouseout="this.style.background='#6366f1'"
+          style="width:100%;padding:10px 16px;background:#6366f1;color:white;border:none;border-radius:14px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background 0.15s ease;font-family:inherit;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
           Chỉ đường
         </button>
@@ -243,7 +264,8 @@
           minWidth: 240,
         });
 
-        marker.on('click', () => {
+        marker.on('click', (e: any) => {
+          L.DomEvent.stopPropagation(e);
           onSelectParking(parking);
           setTimeout(() => marker.openPopup(), 50);
         });
@@ -265,6 +287,52 @@
     if (map) {
       const center = map.getCenter();
       onMapMove([center.lat, center.lng], map.getZoom());
+    }
+  }
+
+  function createDestinationMarkerIcon() {
+    const icon = L.divIcon({
+      html: `
+        <div style="position: relative; width: 40px; height: 50px;">
+          <div style="
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, #f472b6, #ec4899);
+            border-radius: 50% 50% 50% 0;
+            transform: translateX(-50%) rotate(-45deg);
+            transform-origin: center;
+            box-shadow: 0 4px 12px rgba(236, 72, 153, 0.4);
+            animation: bounce-pin 1.6s ease-in-out infinite;
+          "></div>
+          <div style="
+            position: absolute;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            z-index: 2;
+          "></div>
+        </div>
+      `,
+      className: 'destination-marker',
+      iconSize: [40, 50],
+      iconAnchor: [20, 50],
+      popupAnchor: [0, -50],
+    });
+
+    return icon;
+  }
+
+  function handleMapClick(e: any) {
+    // Only handle clicks when in picker mode
+    if (pickerMode && onMapClick) {
+      onMapClick(e.latlng.lat, e.latlng.lng);
     }
   }
 
@@ -353,9 +421,11 @@
 
       markersLayer = L.layerGroup().addTo(map);
       userMarkerLayer = L.layerGroup().addTo(map);
+      destinationLayer = L.layerGroup().addTo(map);
 
       map.on('moveend', handleMapMove);
       map.on('zoomend', handleMapMove);
+      map.on('click', handleMapClick);
 
       mapReady = true;
       mapLoading = false;
@@ -393,10 +463,46 @@
 
   $effect(() => {
     if (browser && map && selectedParking && mapReady) {
-      map.flyTo([selectedParking.lat, selectedParking.lng], 17, { 
+      map.flyTo([selectedParking.lat, selectedParking.lng], 17, {
         animate: true,
-        duration: 0.6 
+        duration: 0.6
       });
+    }
+  });
+
+  // Update destination marker
+  $effect(() => {
+    if (!browser || !map || !L || !mapReady || !destinationLayer) return;
+    if (!destination) return;
+
+    destinationLayer.clearLayers();
+
+    const marker = L.marker([destination.lat, destination.lng], {
+      icon: createDestinationMarkerIcon(),
+      zIndexOffset: 2000,
+    });
+
+    marker.bindPopup(`
+      <div style="padding: 12px 16px; font-family: 'Plus Jakarta Sans', sans-serif; min-width: 180px;">
+        <div style="font-size: 11px; color: #a5a3c0; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px;">
+          Điểm đến
+        </div>
+        <div style="font-size: 14px; font-weight: 600; color: #1e1b4b;">
+          ${destination.name}
+        </div>
+      </div>
+    `, { closeButton: false, className: 'destination-popup' });
+
+    marker.addTo(destinationLayer);
+  });
+
+  // Update cursor when in picker mode
+  $effect(() => {
+    if (browser && mapContainer) {
+      const leafletPane = mapContainer.querySelector('.leaflet-container') as HTMLElement;
+      if (leafletPane) {
+        leafletPane.style.cursor = pickerMode ? 'crosshair' : '';
+      }
     }
   });
 
